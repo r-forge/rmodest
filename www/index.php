@@ -43,7 +43,12 @@ echo $contents; } ?>
 
 <!-- end of project description -->
 
-<p> No content added. </p>
+<p> Hi, folks. I haven't yet gotten around to cleaning up the documentation to make the code load properly as an R package, but in the meantime here is the raw source for some of the files: </p>
+
+<ul>
+<li><a href='rmodest3.r'>rmodest3</a>, the core mortality estimation module.</li>
+<li><a href='survomatic.r'>survomatic</a>, a user friendly wrapper for rmodest3 and a whole raft of other survival functions. Its default behavior at the moment is to prompt you for everything and then output a self-executing .rdata file that you can run again later. Produces Kaplan-Meier survival plots, quantile regression plots, and mortality hazard plots.</li>
+</ul>
 
 <p> The <strong>project summary page</strong> you can find <a href="http://<?php echo $domain; ?>/projects/<?php echo $group_name; ?>/"><strong>here</strong></a>. </p>
 
