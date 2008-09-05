@@ -1,25 +1,32 @@
-.First<-function(x=NULL){
-	#paste(x,"$go()",sep="")
-	cat("\n\n\nWelcome",if(!is.null(x)){'back'}
-	    ,"to Survomatic, the survival analysis package that at least tries to be user-friendly.
-How can I help you today? (type the appropriate key):\n");
-	if(is.null(x)){cat("
-a. Analyze brand new data.
-b. Update Survomatic.
-c. Let me do my own thing, I know what I want.
-\n"); 
-		switch(scan("",'character',nlines=1,quiet=T),a=go(),b={0;.First();},invisible());
-	} else {cat("
-a. Analyze brand new data.
-b. Update Survomatic.
-c. Print out the results of the previous analysis.
-d. Let me do my own thing, I know what I want.
-\n");
-		switch(scan("",'character',nlines=1,quiet=T),a=go(),b={0;.First();},c={d<-get(x);d$go();},invisible());
+.First<-function(x=NULL,skip=F){
+	if(skip){invisible();}
+	updpath='http://biochem2.uthscsa.edu/~bokov/survomatic.';
+	welcome<-paste("Welcome ",if(!is.null(x)){'back '},"to Survomatic, the survival analysis package\nthat at least tries to be user-friendly.\nHow can I help you today?",sep="");
+	choices<-"Analyze brand new data (you can do this manually by typing go()).";
+	if(!is.null(x)){
+		choices<-c(choices,
+		paste("Print out the results of the previous analysis (you can do this manually by typing ",
+		paste(x,"$go()",sep=""),").",sep=""));
 	}
+	choices<-c(choices,"Update Survomatic","Let me do my own thing, I know what I want.");
+	input<-menu(choices,graphics=T,title=welcome);
+	if(is.null(x)&input>1){input<-input+1;}
+	switch(input,
+		go(),
+		{d<-get(x);d$go();},
+		{
+			options(warn=-1);options(show.error.messages=F);
+			upd<-try(source(updpath),silent=T);
+			if(class(upd)=='try-error'){
+				cat("\nUpdate failed. Please contact bokov@uthscsa.edu. But in the meantime you can still continue using the current version.\n");
+				.First();
+			};
+			options(warn=0);options(show.error.messages=T);invisible();
+		},
+		{cat('\n');invisible();}
+	);
 }
 
-.First();
 
 instpx<-function(libs){
 	missing<-c();
@@ -28,28 +35,22 @@ instpx<-function(libs){
 }
 
 checkpx<-function(libs){
-missing<-instpx(libs);
+	missing<-instpx(libs);
 	if(length(missing)>0){
-cat("\nYou are missing one or more needed R packages. If you are connected to the internet, I can automatically install them for you. Do you wish to do that? Press the appropriate key.
-
-a. Yes
-b. No (Quit program)
-
-");
-		input<-scan("",'character',nlines=1,quiet=T);
+		message<-"You are missing one or more needed R packages. If you are connected to the internet, I can automatically install them for you. Do you wish to do that?";
+		choices<-c('Yes','No (quit program)');
+		input<-menu(choices,graphics=T,title=message);
 		switch(input,
-			a=install.packages(missinglib,repos='http://cran.fhcrc.org'),
-			b={cat('When you do get this computer connected to the internet, please try running this script again in order to install the missing packages:',paste(missing,collapse=""),'\n');return(-1);}
+			install.packages(missinglib,repos='http://cran.fhcrc.org'),
+			{cat('When you do get this computer connected to the internet, please try running this script again in order to install the missing packages:',paste(missing,collapse=""),'\n');return(-1);}
 		)
 		missing<-instpx();
 		if(length(missing)>0){cat("For some reason, the following needed packages cannot be installed: ",paste(missing, collapse=","),"\nMake sure you can connect to the internet and try this again. If you know for certain that your internet connection works and the packages still don\'t install, you need to talk to the authors of Survomatic and/or your local R expert to get this problem fixed.\n");return(-1);} else {return(1);}
 	} else {return(1);}
 }
 
-#source('rmodest3.r');source('zptest.r');
-
 go<-function(x,y,names=c(),units="d",save=T,path,prompt=2,xlim=1350){
-	options(warn=0);options(show.error.messages=T);
+	options(warn=-1);options(show.error.messages=F);
 	libs=c('SparseM','splines','survival','quantreg','surv2sample','tcltk');
 	if(checkpx(libs)<0){return(-1);}
 	quantiles<-list(seq(.01,.99,.01),seq(.05,.95,.05),seq(.1,.9,.1),seq(.2,1,.2));
@@ -69,18 +70,16 @@ go<-function(x,y,names=c(),units="d",save=T,path,prompt=2,xlim=1350){
 		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report;
 	}else{top=T;}
 	if(missing(path)&top&save){
-cat("\nWhere would you like to save your results? Please type the appropriate key:
-a. Let me choose using the point and click method.
-b. Let me type in the location.
-c. I don\'t want to save any files. Run analysis without saving.
-
-");
-		input<-scan("",'character',nlines=1,quiet=T);
+		message<-"Where would you like to save your results?";
+		choices<-c("Let me choose using the point and click method.",
+			   "Let me type in the location from the console.",
+			   "I don\'t want to save any files. Run analysis without saving.");
+		input<-menu(choices,graphics=T,title=message);
 		switch(input,
-			a={path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
-			b={cat("\nPlease type in the location where you would like to save files:\n");
+			{path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
+			{cat("\nPlease type in the location where you would like to save files:\n");
 			   path<-paste(scan("",'character',nlines=1,quiet=T),"/",sep="");},
-			c={save<-F;cat('\nContinuing without saving.');}
+			{save<-F;cat('\nContinuing without saving.');}
 		)
 		if(save){cat('\nResults will be saved to:',path);}
 	}
@@ -125,13 +124,14 @@ the enter key when you are done.\n");
 	cat("\nDoing z-score test to see which quantiles differ..."); 
 	if(top){
 		zsc<-c();
-		zsc<-ezz(x,y,names,quant=seq(.05,.95,.05));
+		zsc<-ezz(x,y,names,quant=seq(0,1,.05));
 		if(length(levels(zsc$sig))>1) sig.tests<-c(sig.tests,2);
 	} 
 	cat('\n'); print(zsc);
 	cat("\nDoing log-rank test with permutations...");
 	if(top){
 		xy<-c(x,y); group<-c(rep(names[1],length(x)),rep(names[2],length(y)));
+		print(group);
 		lr<-surv2.logrank(Surv(xy),factor(group));
 		if(lr$pval<=.05) sig.tests<-c(sig.tests,3);
 	}
@@ -295,23 +295,20 @@ attr(go,'v')<-0.1;
 graphsave<-function(path,names,suffix,prompt){
 	if(prompt<2){return();}
 	fname<-paste(path,paste(names,collapse=""),suffix,sep="");
-	cat("
-Do you wish to save this graph as",fname,"?  Hit the appropriate key.
-	
-a	Save under suggested name.
-b	Type in a different name.
-c	Continue without saving.
-");
-	input<-scan("",'character',nlines=1,quiet=T);
+	message<-paste("Do you wish to save this graph as",fname,"?");
+	choices<-c("Save under suggested name.",
+		   "Give a different name (point and click).",
+		   "Type in a name from the console.",
+		   "Don\'t save.")
+	input<-menu(choices,graphics=T,title=message);
 	switch(input,
-		a=dev.copy2eps(file=fname),
-		b={
-		cat("\nPlease type the name and path to which you want to save the file.");
-		fname<-scan("","character",nlines=1,quiet=T);print(fname);
-		dev.copy2eps(file=fname);},
-		c=cat("\nContinuing without saving."),
-		{cat("\nResponse not understood. Saving file just to be on the safe side.");
-		dev.copy2eps(file=fname);}
+		dev.copy2eps(file=fname),
+		{fname<-tclvalue(tkgetSaveFile(initialdir=path,initialfile=paste(names,collapse=""),
+			defaultextension=suffix));},
+		{cat("\nPlease type the name and path to which you want to save the file.");
+			fname<-scan("","character",nlines=1,quiet=T);print(fname);
+			dev.copy2eps(file=fname);},
+		cat("\nContinuing without saving.")
 	)
 
 }
@@ -826,23 +823,4 @@ hslm<-function(par,cons=NULL,x=NULL,y=NULL){
 }
 
 
-.First<-function(x=NULL){
-	#paste(x,"$go()",sep="")
-	cat("\n\n\nWelcome",if(!is.null(x)){'back'}
-	    ,"to Survomatic, the survival analysis package that at least tries to be user-friendly.
-How can I help you today? (type the appropriate key):\n");
-	if(is.null(x)){cat("
-a. Analyze brand new data.
-b. Update Survomatic.
-c. Let me do my own thing, I know what I want.
-\n"); 
-		switch(scan("",'character',nlines=1,quiet=T),a=go(),b={0;.First();},invisible());
-	} else {cat("
-a. Analyze brand new data.
-b. Update Survomatic.
-c. Print out the results of the previous analysis.
-d. Let me do my own thing, I know what I want.
-\n");
-		switch(scan("",'character',nlines=1,quiet=T),a=go(),b={0;.First();},c={d<-get(x);d$go();},invisible());
-	}
-}
+.First();

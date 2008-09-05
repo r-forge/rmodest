@@ -50,6 +50,8 @@ echo $contents; } ?>
 <li><a href='survomatic.r'>survomatic</a>, a user friendly wrapper for rmodest3 and a whole raft of other survival functions. Its default behavior at the moment is to prompt you for everything and then output a self-executing .rdata file that you can run again later. Produces Kaplan-Meier survival plots, quantile regression plots, and mortality hazard plots.</li>
 </ul>
 
+<p>More to come, stay tuned.</p>
+
 <p> The <strong>project summary page</strong> you can find <a href="http://<?php echo $domain; ?>/projects/<?php echo $group_name; ?>/"><strong>here</strong></a>. </p>
 
 </body>
