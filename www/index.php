@@ -48,6 +48,7 @@ echo $contents; } ?>
 <ul>
 <li><a href='rmodest3.r'>rmodest3</a>, the core mortality estimation module.</li>
 <li><a href='survomatic.r'>survomatic</a>, a user friendly wrapper for rmodest3 and a whole raft of other survival functions. Its default behavior at the moment is to prompt you for everything and then output a self-executing .rdata file that you can run again later. Produces Kaplan-Meier survival plots, quantile regression plots, and mortality hazard plots.</li>
+<li><a href='simsurv.r'>simsurv</a>, a script for creating arbitrary numbers of datasets with known Gompertz/Logistic parameters. Useful for testing survival analysis software.</li>
 </ul>
 
 <p>More to come, stay tuned.</p>

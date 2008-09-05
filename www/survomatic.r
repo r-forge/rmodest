@@ -1,19 +1,21 @@
 .First<-function(x=NULL,skip=F){
+	library(utils);library(grDevices);
 	if(skip){invisible();}
-	updpath='http://biochem2.uthscsa.edu/~bokov/survomatic.';
-	welcome<-paste("Welcome ",if(!is.null(x)){'back '},"to Survomatic, the survival analysis package\nthat at least tries to be user-friendly.\nHow can I help you today?",sep="");
-	choices<-"Analyze brand new data (you can do this manually by typing go()).";
+	updpath='http://rmodest.r-forge.r-project.org/survomatic.r';
+	welcome<-paste("Welcome ",if(!is.null(x)){'back '},"to Survomatic, the survival analysis package\nthat at least tries to be user-friendly.\nHow can I help you today?\n",sep="");
+	choices<-"Analyze brand new data (same as  typing go()).";
 	if(!is.null(x)){
 		choices<-c(choices,
-		paste("Print out the results of the previous analysis (you can do this manually by typing ",
+		paste("Print out the results of the previous analysis (same as typing ",
 		paste(x,"$go()",sep=""),").",sep=""));
 	}
 	choices<-c(choices,"Update Survomatic","Let me do my own thing, I know what I want.");
+	cat(welcome);
 	input<-menu(choices,graphics=T,title=welcome);
 	if(is.null(x)&input>1){input<-input+1;}
 	switch(input,
 		go(),
-		{d<-get(x);d$go();},
+		{d<<-get(x);d$go();},
 		{
 			options(warn=-1);options(show.error.messages=F);
 			upd<-try(source(updpath),silent=T);
@@ -30,26 +32,35 @@
 
 instpx<-function(libs){
 	missing<-c();
-	for(i in libs){if(!require(i,character.only=T,warn.conflicts=F)){missing<-c(missing,i)}}
+	for(i in libs){
+		libtry<-try(library(i,character.only=T,warn.conflicts=F),silent=T);
+		if(class(libtry)=='try-error'){missing<-c(missing,i)}
+	}
 	return(missing);
 }
 
 checkpx<-function(libs){
 	missing<-instpx(libs);
 	if(length(missing)>0){
-		message<-"You are missing one or more needed R packages. If you are connected to the internet, I can automatically install them for you. Do you wish to do that?";
+		message<-"You are missing one or more needed R packages. If you are connected 
+to the internet, I can automatically install them for you. Do you 
+wish to do that?\n";
 		choices<-c('Yes','No (quit program)');
+		cat(message);
 		input<-menu(choices,graphics=T,title=message);
 		switch(input,
-			install.packages(missinglib,repos='http://cran.fhcrc.org'),
-			{cat('When you do get this computer connected to the internet, please try running this script again in order to install the missing packages:',paste(missing,collapse=""),'\n');return(-1);}
+			install.packages(missing,repos='http://cran.fhcrc.org'),
+			{cat('When you do get this computer connected to the internet, please 
+try running this script again in order to install the missing 
+packages:',paste(missing,collapse=" "),'\n');
+			return(-1);}
 		)
-		missing<-instpx();
+		missing<-instpx(libs);
 		if(length(missing)>0){cat("For some reason, the following needed packages cannot be installed: ",paste(missing, collapse=","),"\nMake sure you can connect to the internet and try this again. If you know for certain that your internet connection works and the packages still don\'t install, you need to talk to the authors of Survomatic and/or your local R expert to get this problem fixed.\n");return(-1);} else {return(1);}
 	} else {return(1);}
 }
 
-go<-function(x,y,names=c(),units="d",save=T,path,prompt=2,xlim=1350){
+go<-function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
 	options(warn=-1);options(show.error.messages=F);
 	libs=c('SparseM','splines','survival','quantreg','surv2sample','tcltk');
 	if(checkpx(libs)<0){return(-1);}
@@ -61,52 +72,55 @@ go<-function(x,y,names=c(),units="d",save=T,path,prompt=2,xlim=1350){
 			for(i in 2:(length(mycall)-1)){
 				d<-d[[mycall[i]]];
 		}}
-		x<-d$x;y<-d$y;names<-d$names;smry<-d$smry;zsc<-d$zsc;xy<-d$xy;
+		x<-d$x;y<-d$y;xynames<-d$xynames;smry<-d$smry;zsc<-d$zsc;xy<-d$xy;
 		group<-d$group;lr<-d$lr;qreg<-d$qreg;qreg.sum<-d$qreg.sum;tt<-d$tt;
 		qreg.tab<-d$qreg.tab;xmod<-d$xmod;ymod<-d$ymod;xymod<-d$xymod;
 		xd1<-d$xd1;xd7<-d$xd7;xd30<-d$xd30;yd1<-d$yd1;yd7<-d$yd7;yd30<-d$yd30;
 		xhzpars<-d$xhzpars;yhzpars<-d$yhzpars;xymod.tab<-d$xymod.tab;
 		modx<-d$modx;mody<-d$mody;modxy<-d$modxy;xysurvfit<-d$xysurvfit;
-		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report;
+		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report; path<-d$path;
 	}else{top=T;}
 	if(missing(path)&top&save){
-		message<-"Where would you like to save your results?";
+		message<-"Where would you like to save your results?\n";
 		choices<-c("Let me choose using the point and click method.",
 			   "Let me type in the location from the console.",
 			   "I don\'t want to save any files. Run analysis without saving.");
+		cat(message);
 		input<-menu(choices,graphics=T,title=message);
 		switch(input,
 			{path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
 			{cat("\nPlease type in the location where you would like to save files:\n");
-			   path<-paste(scan("",'character',nlines=1,quiet=T),"/",sep="");},
+			   path<-paste(scan("",'character',nlines=1,quiet=T,sep='?'),"/",sep="");},
 			{save<-F;cat('\nContinuing without saving.');}
 		)
-		if(save){cat('\nResults will be saved to:',path);}
+		if(save){cat('\nResults will be saved to:',path,'\n');}
 	}
 	if(missing(x)&top){
 		cat("\nYou need a group to compare. Please copy and paste one column of survival times from a spreadsheet.
 They don\'t have to be in order, but make sure there are no empty spaces. Hit the enter key when you 
 are done.\n");
-		x<-scan();	
+		x<-scan(); 
 	}
-	if(length(names)<2&top){
+	if(length(xynames)<2&top){
 		cat("Please give a brief name for the first group.\n");
-		names[1]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
+		xynames[1]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
 	}
 	if(missing(y)&top){
 		cat("\nYou need a second group to compare. Please copy and paste one column of survival times from a 
 spreadsheet. They don\'t have to be in order, but make sure there are no empty spaces. Hit 
 the enter key when you are done.\n");
-		y<-scan();
+		y<-scan(); 
 	}
-	if(length(names)<2&top){
+	if(length(xynames)<2&top){
 		cat("Please give a brief name for the second group.\n");
-		names[2]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
+		xynames[2]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
 	}
 	if(save&top){
-		assign(names[1],x,envir=.GlobalEnv);
-		assign(names[2],y,envir=.GlobalEnv);
-		cat("The survival times for the two groups have been saved as",names[1],"and",names[2],"inside R so you won\'t have to paste them in next time. Instead you can type \'go(",names[1],",",names[2],")\'\n");
+		assign(xynames[1],x,envir=.GlobalEnv);
+		assign(xynames[2],y,envir=.GlobalEnv);
+		cat("The survival times for the two groups have been saved as",xynames[1],"and",xynames[2],"inside R 
+so you won\'t have to paste them in next time. Instead you can type 
+\'go(",xynames[1],",",xynames[2],")\'\n");
 	}
 
 	if(top){
@@ -116,22 +130,22 @@ the enter key when you are done.\n");
 	}
 
 	cat("\nDoing summary statistics...");
-	if(top){smry<-t(cbind(summary(x),summary(y))); rownames(smry)<-names;}
+	if(top){smry<-t(cbind(summary(x),summary(y))); rownames(smry)<-xynames;}
 	cat('\n'); print(smry);
 	cat("\nDoing t-test on log-transformed data...");
-	if(top){tt<-t.test(log(x),log(y));if(tt$p.value<=.05) sig.tests<-c(sig.tests,1);}
+	if(top){xt<-x[which(x>0)]; yt<-y[which(y>0)];tt<-t.test(log(xt),log(yt));if(tt$p.value<=.05) sig.tests<-c(sig.tests,1);}
 	cat('\n'); print(tt);
 	cat("\nDoing z-score test to see which quantiles differ..."); 
 	if(top){
 		zsc<-c();
-		zsc<-ezz(x,y,names,quant=seq(0,1,.05));
+		zsc<-ezz(x,y,xynames,quant=seq(0,.95,.05));
 		if(length(levels(zsc$sig))>1) sig.tests<-c(sig.tests,2);
 	} 
 	cat('\n'); print(zsc);
 	cat("\nDoing log-rank test with permutations...");
 	if(top){
-		xy<-c(x,y); group<-c(rep(names[1],length(x)),rep(names[2],length(y)));
-		print(group);
+		xy<-c(x,y); group<-c(rep(xynames[1],length(x)),rep(xynames[2],length(y)));
+		#print(group);
 		lr<-surv2.logrank(Surv(xy),factor(group));
 		if(lr$pval<=.05) sig.tests<-c(sig.tests,3);
 	}
@@ -149,11 +163,13 @@ the enter key when you are done.\n");
 			qreg.sum<-try(summary(qreg,se='ker'));
 		}
 		if(class(qreg.sum)!="character"){
-			qreg.tab<-c();
+			qreg.tab<-c(); qreg.sig=F;
 			for(i in qreg.sum){
 				qreg.tab<-rbind(qreg.tab,c(quantile=i$tau,i$coefficients[2,]));
-				if(min(qreg.tab[,5])<=.05) sig.tests<-c(sig.tests,4);
-			}}else{qreg.tab<-qreg.sum;}
+				if(min(qreg.tab[,5])<=.05){qreg.sig=T;}
+			}
+			if(qreg.sig){sig.tests<-c(sig.tests,4);}
+		}else{qreg.tab<-qreg.sum;}
 	}
 	cat('\n'); print(qreg.tab);
 
@@ -182,8 +198,8 @@ the enter key when you are done.\n");
 		if(min(dlikyu)<=.05){mody<-max(which(dlikyu<=.05))+1;} else {mody<-1;}
 		modxy<-min(modx,mody);
 	}
-	cat("\nThe best model for",names[1],"is",names(xmod)[modx],".");
-	cat("\nThe best model for",names[2],"is",names(ymod)[mody],".");
+	cat("\nThe best model for",xynames[1],"is",names(xmod)[modx],".");
+	cat("\nThe best model for",xynames[2],"is",names(ymod)[mody],".");
 	cat("\nChecking for shared mortality parameters between groups...");
 	if(top){
 		idxcons<-switch(modxy,c(a=1,b=2),c(a=1,b=2,c=3),c(a=1,b=2,s=4),c(a=1,b=2,c=3,s=4));
@@ -203,56 +219,54 @@ the enter key when you are done.\n");
 	cat('\n');print(xymod.tab); 
 
 	if(top){xysurvfit<-survfit(Surv(xy)~group);}
-	tmain<-paste(names,collapse=" vs. ");
-	cat("\nPlotting survival curves.");
+	tmain<-paste(xynames,collapse=" vs. ");
+	cat("\nPlotting survival curves.\n");
 	plot(xysurvfit,lwd=1,bty="n",xlim=c(0,xlim));
-	for(i in 1:2){points(xysurvfit[i],pch=22+i,cex=1.5,lwd=1.5,bg=rainbow(2)[i]);}
+	for(i in 1:2){points(xysurvfit[i],pch=23+i,cex=1.5,lwd=1.5,bg=rainbow(2)[i]);}
 	title(main=paste(tmain,"Survival"));
-	legend("topright",legend=names[2:1],pch=23:24,y.intersp=1.5,
+	legend("topright",legend=xynames[2:1],pch=24:25,y.intersp=1.5,
 		#inset=-0.006*psize,-+
 		bty="n",pt.cex=1.5,cex=1.5,lwd=1.5,pt.bg=rainbow(2));
 	
-	graphsave(path,names,".surv.eps",prompt);
+	graphsave(path,xynames,".srv.eps",prompt);
 	if(class(qreg.sum)!="character"){
-		cat("\n\nPlotting quantile regression curves.");
+		cat("\n\nPlotting quantile regression curves.\n");
 		plot(qreg.sum);
-		graphsave(path,names,".qreg.eps",prompt);
+		graphsave(path,xynames,".qr.eps",prompt);
 	title(main=paste(tmain,"Quantile Regression"));
 	}
 
 	if(top){
 		xhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));
 		yhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));}
-	cat("\n\nPlotting hazard curves for",names[1],".");
+	cat("\n\nPlotting hazard curves for",xynames[1],".\n");
 	lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
-	title(main=paste(names[1],"Hazard"));
-	graphsave(path,names[1],".haz.eps",prompt);
-	cat("\n\nPlotting hazard curves for",names[2],".");
+	title(main=paste(xynames[1],"Hazard"));
+	graphsave(path,xynames[1],".haz.eps",prompt);
+	cat("\n\nPlotting hazard curves for",xynames[2],".\n");
 	lazyhazplots(list(yd1,yd7,yd30),yhzpars,c(1,7,30),xlim=xlim);
-	title(main=paste(names[2],"Hazard"));
-	graphsave(path,names[2],".haz.eps",prompt);
+	title(main=paste(xynames[2],"Hazard"));
+	graphsave(path,xynames[2],".hz.eps",prompt);
 
 	if(top){
-	myzsc<-zsc[match("*",zsc$sig),c(1,8)];
+	myzsc<-zsc[which(zsc$sig=="*"),c(1,8)];
 	if(class(qreg.tab)!="character"){
 		myqreg<-matrix(qreg.tab[qreg.tab[,5]<.05,c(1,5)],ncol=2);
 	} else {myqreg<-cbind(NA,NA);}
 	lz<-dim(myzsc)[1];lqr<-dim(myqreg)[1];
-	report<-c(mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,NA,myqreg[,1],myzsc[,1]);
-	report<-cbind(report,c(mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,NA,rep(NA,lqr+lz)));
-	rownames(report)<-c('mean','median','90%','max','log-rank',"",'initial mortality','mortality acceleration',
+	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,NA,myqreg[,1],myzsc[,1]);
+	report<-cbind(report,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,NA,rep(NA,lqr+lz)));
+	rownames(report)<-c('n','mean','median','90%','max','log-rank',"",'initial mortality','mortality acceleration',
 			    "quantile regression",rep("",lqr),paste("z-score",rownames(myzsc)));
-	colnames(report)<-names;
+	colnames(report)<-xynames;
 	report<-cbind(report,p=
-		c(tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],rep(NA,3),xymod.tab[,5],NA,myqreg[,2],myzsc[,2]));
+		c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],rep(NA,3),xymod.tab[,5],NA,myqreg[,2],myzsc[,2]));
 	}
 
 	if(top){
 		sig.tests<-tests[sig.tests]; 
 		if(length(sig.tests)==0){sig.tests<-0;names(sig.tests)<-"None";}
-		rname<-paste(paste(names,collapse=""),"surv",sep=".");
-		fname<-paste(path,rname,".rdata",sep="");
-		out<-list(smry=smry,zsc=zsc,x=x,y=y,xy=xy,names=names,
+		out<-list(smry=smry,zsc=zsc,x=x,y=y,xy=xy,xynames=xynames,path=path,
 			group=group,lr=lr,tt=tt,tests=tests,sig.tests=sig.tests,
 			qreg=qreg,qreg.tab=qreg.tab,qreg.sum=qreg.sum,
 			xd1=xd1,xd7=xd7,xd30=xd30,
@@ -264,13 +278,15 @@ the enter key when you are done.\n");
 		go<-get(as.character(sys.call()[1]));
 		out$go<-go; out$sys<-function(q){print(group);print(sys.status());print(sys.call());}
 		if(save){
+			rname<-paste(paste(xynames,collapse=""),"surv",sep=".");
+			fname<-paste(path,rname,".rdata",sep="");
 			assign(rname,out);
 			formals(.First)$x<-rname;
-			save(list=c(rname,"checkcons","checkpx","ctrl","demog","dex",
+			save(list=c(rname,"checkcons","checkpx","ctrl","demog","dex","xynames",
 				    "exg","exgm","exl","exlm","ezz","fixpar","go","graphsave",
 				    "grf","hsg","hsgm","hsl","hslm","instpx","lazyhazplots",
 				    "lazymltplot","objf","opsurv","srvhaz","zpprob","zptest",
-			            ".First",names),file=fname);
+			            ".First",xynames),file=fname);
 			cat("\nYour results have been saved as ",fname);
 		}
 	}
@@ -279,12 +295,24 @@ the enter key when you are done.\n");
 	print(names(sig.tests));
 	cat("\nExecutive Summary:\n");
 	print(report[1:4,],na.print="");
-	print('\n-----------------------\n');
+	cat('\n-----------------------\n');
 	print(report[5:dim(report)[1],],na.print="");
 	cat("\n\nMethods:");
-	cat("\nMeans of log-transformed survival times were compared using the Student\'s t-test. Quantiles, including the median, were compared using a modified version of the score test described in Wang et. al. (2004). The log-rank test (Fleming and Harrington, 1991) was used to compare distributions of survival times with the p-value adjusted based on 2000 permutations of the data (Andersen et. al., 1993). The mortality parameters were fitted and compared using the maximum likelihood method adapted from Pletcher et. al. (2000). The R statistical language (R Development Core Team, 2008) was used for all calculations except where specified. The R scripts used to perform these calculations are available from the authors upon request.\n");
+	cat("\nMeans of log-transformed survival times were compared using the Student\'s 
+t-test. Quantiles, including the median, were compared using a modified 
+version of the score test described in Wang et. al. (2004). The log-rank 
+test (Fleming and Harrington, 1991) was used to compare distributions of 
+survival times with the p-value adjusted based on 2000 permutations of 
+the data (Andersen et. al., 1993). The mortality parameters were fitted 
+and compared using the maximum likelihood method adapted from Pletcher 
+et. al. (2000). The R statistical language (R Development Core Team, 
+2008) was used for all calculations except where specified. The R 
+scripts used to perform these calculations are available from the 
+authors upon request.\n");
 	cat("\nThank you for using Survomatic! "); 
-	if(top&save) cat("All the analysis you have done will now be saved for later use as an R file entitled",fname,".")
+	if(top&save) cat("All the analysis you have done will now be 
+saved for later use as an R file entitled
+",fname,".")
 	cat("\n\n\n");
 	options('warn'= 0);options(show.error.messages=T);
 	if(top) invisible(out);
@@ -292,21 +320,22 @@ the enter key when you are done.\n");
 
 attr(go,'v')<-0.1;
 
-graphsave<-function(path,names,suffix,prompt){
+graphsave<-function(path,xynames,suffix,prompt){
 	if(prompt<2){return();}
-	fname<-paste(path,paste(names,collapse=""),suffix,sep="");
-	message<-paste("Do you wish to save this graph as",fname,"?");
+	fname<-paste(path,paste(xynames,collapse=""),suffix,sep="");
+	message<-paste("Do you wish to save this graph as",fname,"?\n");
 	choices<-c("Save under suggested name.",
 		   "Give a different name (point and click).",
 		   "Type in a name from the console.",
 		   "Don\'t save.")
+	cat(message);
 	input<-menu(choices,graphics=T,title=message);
 	switch(input,
 		dev.copy2eps(file=fname),
-		{fname<-tclvalue(tkgetSaveFile(initialdir=path,initialfile=paste(names,collapse=""),
-			defaultextension=suffix));},
+		{fname<-tclvalue(tkgetSaveFile(initialdir=path,initialfile=paste(xynames,collapse=""),
+			defaultextension=suffix));dev.copy2eps(file=fname);},
 		{cat("\nPlease type the name and path to which you want to save the file.");
-			fname<-scan("","character",nlines=1,quiet=T);print(fname);
+			fname<-scan("","character",nlines=1,quiet=T,sep='?');print(fname);
 			dev.copy2eps(file=fname);},
 		cat("\nContinuing without saving.")
 	)
