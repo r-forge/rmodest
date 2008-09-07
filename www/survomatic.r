@@ -79,6 +79,7 @@ go<-function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
 		xhzpars<-d$xhzpars;yhzpars<-d$yhzpars;xymod.tab<-d$xymod.tab;
 		modx<-d$modx;mody<-d$mody;modxy<-d$modxy;xysurvfit<-d$xysurvfit;
 		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report; path<-d$path;
+		sigqreg<-d$sigqreg;sigzsc<-d$sigzsc;
 	}else{top=T;}
 	if(missing(path)&top&save){
 		message<-"Where would you like to save your results?\n";
@@ -89,33 +90,28 @@ go<-function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
 		input<-menu(choices,graphics=T,title=message);
 		switch(input,
 			{path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
-			{cat("\nPlease type in the location where you would like to save files:\n");
-			   path<-paste(scan("",'character',nlines=1,quiet=T,sep='?'),"/",sep="");},
+			{path<-readline("Please type in the location where you would like to save files: ");
+			   path<-paste(path,"/",sep="");},
 			{save<-F;cat('\nContinuing without saving.');}
 		)
 		if(save){cat('\nResults will be saved to:',path,'\n');}
-	}
+	} else {path=NULL;}
 	if(missing(x)&top){
 		cat("\nYou need a group to compare. Please copy and paste one column of survival times from a spreadsheet.
 They don\'t have to be in order, but make sure there are no empty spaces. Hit the enter key when you 
 are done.\n");
 		x<-scan(); 
 	}
-	if(length(xynames)<2&top){
-		cat("Please give a brief name for the first group.\n");
-		xynames[1]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
-	}
+	if(length(xynames)<2&top){xynames[1]<-readline("Please give a brief name for the first group: ");}
 	if(missing(y)&top){
 		cat("\nYou need a second group to compare. Please copy and paste one column of survival times from a 
 spreadsheet. They don\'t have to be in order, but make sure there are no empty spaces. Hit 
 the enter key when you are done.\n");
 		y<-scan(); 
 	}
-	if(length(xynames)<2&top){
-		cat("Please give a brief name for the second group.\n");
-		xynames[2]<-paste(scan("",'character',nlines=1,quiet=T),collapse=".");
-	}
+	if(length(xynames)<2&top){xynames[2]<-readline("Please give a brief name for the second group: ");}
 	if(save&top){
+		# ought to globally replace spaces with dots here
 		assign(xynames[1],x,envir=.GlobalEnv);
 		assign(xynames[2],y,envir=.GlobalEnv);
 		cat("The survival times for the two groups have been saved as",xynames[1],"and",xynames[2],"inside R 
@@ -159,8 +155,8 @@ so you won\'t have to paste them in next time. Instead you can type
 				next;
 			}
 			#cat('\nTrying quantiles...',paste(quantiles[[i]],collapse=" "));
-			qreg<-rq(log(xy)~group,tau=quantiles[[i]]);i<-i+1;
-			qreg.sum<-try(summary(qreg,se='ker'));
+			qreg<-rq(log(xy)~relevel(factor(group),2),tau=quantiles[[i]]);i<-i+1;
+			qreg.sum<-try(summary(qreg,se='ker')); cat('.');
 		}
 		if(class(qreg.sum)!="character"){
 			qreg.tab<-c(); qreg.sig=F;
@@ -218,50 +214,49 @@ so you won\'t have to paste them in next time. Instead you can type
 	}
 	cat('\n');print(xymod.tab); 
 
+	if(top){
+	sigzsc<-zsc[which(zsc$sig=="*"),c(2,4,8)];
+	if(class(qreg.tab)!="character"){
+		sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05,c(1:2,5)],ncol=3);
+	} else {sigqreg<-matrix(NA,ncol=3);}
+	if(dim(sigqreg)[1]==0){sigqreg<-matrix(NA,ncol=3);}
+	lz<-dim(sigzsc)[1];lqr<-dim(sigqreg)[1];browser();
+	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,
+		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(x,sigqreg[,1])},sigzsc[,1]);
+	report<-cbind(report,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,
+		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(y,sigqreg[,1])},sigzsc[,2]));
+	rownames(report)<-c('n','mean','median','90%','max','log-rank',"",'initial mortality','mortality acceleration',"",if(match(NA,sigqreg[,1],no=F)){NA}else{paste("(qr) longevity of quantile",sigqreg[,1])},paste("(z score) number alive at quantile",rownames(sigzsc)))[1:dim(report)[1]];
+	colnames(report)<-xynames;
+	report<-cbind(report,p=
+	   c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],NA,lr$pval,NA,xymod.tab[,5],NA,sigqreg[,3],sigzsc[,3]));
+	}
+
 	if(top){xysurvfit<-survfit(Surv(xy)~group);}
 	tmain<-paste(xynames,collapse=" vs. ");
 	cat("\nPlotting survival curves.\n");
 	plot(xysurvfit,lwd=1,bty="n",xlim=c(0,xlim));
-	for(i in 1:2){points(xysurvfit[i],pch=23+i,cex=1.5,lwd=1.5,bg=rainbow(2)[i]);}
+	for(i in 1:2){points(xysurvfit[i],pch=23+i,cex=1.5,lwd=1.5,bg=c('gray20','white')[i]);}
 	title(main=paste(tmain,"Survival"));
 	legend("topright",legend=xynames[2:1],pch=24:25,y.intersp=1.5,
 		#inset=-0.006*psize,-+
-		bty="n",pt.cex=1.5,cex=1.5,lwd=1.5,pt.bg=rainbow(2));
+		bty="n",pt.cex=1.5,cex=1.5,lwd=1.5,pt.bg=c('gray20','white'));
 	
-	graphsave(path,xynames,".srv.eps",prompt);
+	if(save){graphsave(path,xynames,".srv.eps",prompt);}else{readline("Press enter to continue.")}
 	if(class(qreg.sum)!="character"){
 		cat("\n\nPlotting quantile regression curves.\n");
-		plot(qreg.sum);
-		graphsave(path,xynames,".qr.eps",prompt);
-	title(main=paste(tmain,"Quantile Regression"));
+		plot(qreg.sum,parm=2,ols=F,main=paste(tmain,"Quantile Regression"));
+		points(sigqreg[,1],sigqreg[,2],col='red',lwd=3);
+		if(save){graphsave(path,xynames,".qr.eps",prompt);}else{readline("Press enter to continue.")}
 	}
 
 	if(top){
 		xhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));
 		yhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));}
-	cat("\n\nPlotting hazard curves for",xynames[1],".\n");
-	lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
-	title(main=paste(xynames[1],"Hazard"));
-	graphsave(path,xynames[1],".haz.eps",prompt);
-	cat("\n\nPlotting hazard curves for",xynames[2],".\n");
-	lazyhazplots(list(yd1,yd7,yd30),yhzpars,c(1,7,30),xlim=xlim);
-	title(main=paste(xynames[2],"Hazard"));
-	graphsave(path,xynames[2],".hz.eps",prompt);
-
-	if(top){
-	myzsc<-zsc[which(zsc$sig=="*"),c(1,8)];
-	if(class(qreg.tab)!="character"){
-		myqreg<-matrix(qreg.tab[qreg.tab[,5]<.05,c(1,5)],ncol=2);
-	} else {myqreg<-cbind(NA,NA);}
-	lz<-dim(myzsc)[1];lqr<-dim(myqreg)[1];
-	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,NA,myqreg[,1],myzsc[,1]);
-	report<-cbind(report,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,NA,rep(NA,lqr+lz)));
-	rownames(report)<-c('n','mean','median','90%','max','log-rank',"",'initial mortality','mortality acceleration',
-			    "quantile regression",rep("",lqr),paste("z-score",rownames(myzsc)));
-	colnames(report)<-xynames;
-	report<-cbind(report,p=
-		c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],rep(NA,3),xymod.tab[,5],NA,myqreg[,2],myzsc[,2]));
-	}
+	cat("\n\nPlotting hazard curves.\n");
+	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
+	lazyhazplots(list(xd30),xhzpars,30,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
+	lazyhazplots(list(yd30),yhzpars,30,xlim=xlim/30,cols='blue',add=T);
+	if(save){graphsave(path,xynames[2],".hz.eps",prompt);}else{readline("Press enter to continue.")}
 
 	if(top){
 		sig.tests<-tests[sig.tests]; 
@@ -272,8 +267,8 @@ so you won\'t have to paste them in next time. Instead you can type
 			xd1=xd1,xd7=xd7,xd30=xd30,
 			yd1=yd1,yd7=yd7,yd30=yd30,xhzpars=xhzpars,yhzpars=yhzpars,
 			xmod=xmod,ymod=ymod,modx=modx,mody=mody,
-			modxy=modxy,xymod=xymod,report=report,
-			xymod.tab=xymod.tab,xysurvfit=xysurvfit)
+			modxy=modxy,xymod=xymod,report=report,sigqreg=sigqreg,
+			sigzsc=sigzsc,xymod.tab=xymod.tab,xysurvfit=xysurvfit)
 		class(out)<-"survomatic";
 		go<-get(as.character(sys.call()[1]));
 		out$go<-go; out$sys<-function(q){print(group);print(sys.status());print(sys.call());}
@@ -294,21 +289,25 @@ so you won\'t have to paste them in next time. Instead you can type
 	cat("\nThe following test/s may have produced significant results:\n");
 	print(names(sig.tests));
 	cat("\nExecutive Summary:\n");
-	print(report[1:4,],na.print="");
-	cat('\n-----------------------\n');
-	print(report[5:dim(report)[1],],na.print="");
+	print(report[1:5,],na.print="");
+	cat('\n-----------------------\nLog-rank: p =',report[6,3],'\n');
+	cat('\n-----------------------\nMortality\n');
+	print(report[8:9,],na.print="");
+	cat('\n-----------------------\nQuantile Regression & Z-score\n');
+	print(report[11:dim(report)[1],],na.print="");
 	cat("\n\nMethods:");
 	cat("\nMeans of log-transformed survival times were compared using the Student\'s 
 t-test. Quantiles, including the median, were compared using a modified 
-version of the score test described in Wang et. al. (2004). The log-rank 
-test (Fleming and Harrington, 1991) was used to compare distributions of 
-survival times with the p-value adjusted based on 2000 permutations of 
-the data (Andersen et. al., 1993). The mortality parameters were fitted 
-and compared using the maximum likelihood method adapted from Pletcher 
-et. al. (2000). The R statistical language (R Development Core Team, 
-2008) was used for all calculations except where specified. The R 
-scripts used to perform these calculations are available from the 
-authors upon request.\n");
+version of the score test described in Wang et. al. (2004). Quantile 
+regression was done as described by Koenker and Geling (2001). The 
+log-rank test (Fleming and Harrington, 1991) was used to compare 
+distributions of survival times with the p-value adjusted based on 2000 
+permutations of the data (Andersen et. al., 1993). The mortality 
+parameters were fitted and compared using the maximum likelihood method 
+adapted from Pletcher et. al. (2000). The R statistical language (R 
+Development Core Team, 2008) was used for all calculations except where 
+specified. The R scripts used to perform these calculations are 
+available from the authors upon request.\n");
 	cat("\nThank you for using Survomatic! "); 
 	if(top&save) cat("All the analysis you have done will now be 
 saved for later use as an R file entitled
@@ -334,9 +333,12 @@ graphsave<-function(path,xynames,suffix,prompt){
 		dev.copy2eps(file=fname),
 		{fname<-tclvalue(tkgetSaveFile(initialdir=path,initialfile=paste(xynames,collapse=""),
 			defaultextension=suffix));dev.copy2eps(file=fname);},
-		{cat("\nPlease type the name and path to which you want to save the file.");
-			fname<-scan("","character",nlines=1,quiet=T,sep='?');print(fname);
-			dev.copy2eps(file=fname);},
+		{res<-0;class(res)<-'try-error';
+		 while(class(res)=='try-error'){
+			fname<-readline("Please type the path and name to which you want to save the file: ");
+			print(fname); res<-try(dev.copy2eps(file=fname));
+			if(class(res)=='try-error'){cat('Oops. Bad file name or path, try again please.\n')}}
+		},
 		cat("\nContinuing without saving.")
 	)
 
@@ -361,25 +363,27 @@ demog<-function(t,int=1){
 	data.frame(out);
 }
 
-lazyhazplots<-function(ts,pars,ints,cols=rainbow(length(ts)),xlim=NULL,add=F){
+lazyhazplots<-function(ts,pars,ints,cols=rainbow(length(ts)),xlim=NULL,add=F,main=""){
 	mnt<-mnx<-mx<-c(); 
 	for(j in ts){
 		mx<-c(mx,max(j$ux,na.rm=T)); mnx<-c(mnx,min(j[j$ux>0,]$ux,na.rm=T));}
 	mnt<-match(T,ts[[which.max(ints)]]$ux>0)
-	mx<-max(mx); mnx<-min(mnx); print(mnx); if(is.null(xlim)){xrng<-c(mnt,max(ts[[which.min(ints)]]$time));}else{
+	mx<-max(mx); mnx<-min(mnx); if(is.null(xlim)){xrng<-c(mnt,max(ts[[which.min(ints)]]$time));}else{
 		xrng<-c(10,xlim);}
-	print(xrng);
+	#print(xrng);
 	if(add){points(1+ts[[1]]$time,ts[[1]]$ux,pch=3,col=cols[1]);} else {
 		plot(1+ts[[1]]$time,ts[[1]]$ux,log='xy',type='p', pch=3,
-			xlim=xrng,ylim=c(mnx,mx),xlab="Time",ylab="Hazard Rate",col=cols[1]);
+			xlim=xrng,ylim=c(mnx,mx),xlab="Time",ylab="Hazard Rate",col=cols[1],main=main);
 	} 
+	lines(1+xrng,srvhaz(1+xrng,pars[1,1],pars[1,2],i=ints[1]),col=cols[1],lty=2);
+	lines(1+xrng,srvhaz(1+xrng,pars[2,1],pars[2,2],pars[2,3],i=ints[1]),col=cols[1],lty=1);
 	xrng<-xrng[1]:xrng[2];
-	for(j in 2:length(ts)){
-	points(1+ts[[j]]$time,ts[[j]]$ux,col=cols[j],pch=3); 
-		lines(1+xrng,ints[j]*srvhaz(1+xrng,pars[1,1],pars[1,2],i=ints[j]),col=cols[j],lty=2);
-		lines(1+xrng,ints[j]*srvhaz(1+xrng,pars[2,1],pars[2,2],pars[2,3],i=ints[j]),col=cols[j],lty=1);
-		lines(1+xrng,srvhaz(1+xrng,pars[1,1],pars[1,2]),col=cols[1],lty=2);
-		lines(1+xrng,srvhaz(1+xrng,pars[2,1],pars[2,2],pars[2,3]),col=cols[1],lty=1);
+	if(length(ts)>1){
+		for(j in 2:length(ts)){
+		points(1+ts[[j]]$time,ts[[j]]$ux,col=cols[j],pch=3); 
+			lines(1+xrng,ints[j]*srvhaz(1+xrng,pars[1,1],pars[1,2],i=ints[j]),col=cols[j],lty=2);
+			lines(1+xrng,ints[j]*srvhaz(1+xrng,pars[2,1],pars[2,2],pars[2,3],i=ints[j]),col=cols[j],lty=1);
+		}
 	}
 }
 
@@ -476,21 +480,19 @@ lazymltplot<-function(d,subset,xmax=1350){
 
 ezz<-function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
 	      gnames=NULL,noob=F,thetas=c(.05,.95),debug=F){
+	tstart<-proc.time()[3];
 	if(is.null(d2)){
 		groups<-levels(as.factor(g));
 		d1<-subset(d,g==groups[1]);
 		d2<-subset(d,g==groups[2]);
-	} else { d1<-d; if(is.null(g)){groups<-c('a','b');}else{groups<-g;}}
+	} else { d1<-d; d<-c(d1,d2); if(is.null(g)){groups<-c('a','b');}else{groups<-g;}}
 	#mintheta<-min(1/d1,1/d2);
-	n1<-length(d1); n2<-length(d2);
-	n<-n1+n2;
+	n1<-length(d1); n2<-length(d2); n<-n1+n2;
 	output<-c(); q<-quantile(d,quant);
 	if(debug) cat("\nRunning zptest on x1 and x2.");
-	for(i in q){
-		x1<-sum(d1>i); x2<-sum(d2>i);
-		output<-rbind(output,zptest(x1,x2,n1,n2,n));
-		if(debug) cat('.');
-	}
+	x1<-x2<-c();
+	for(i in q){x1<-c(x1,sum(d1>i)); x2<-c(x2,sum(d2>i));}
+	output<-zptest(x1,x2,n1,n2,n);
 	output<-cbind(q,output);
 	if(is.null(gnames)){g1<-groups[1];g2<-groups[2];}
 	else{g1<-gnames[1];g2<-gnames[2];}
@@ -504,17 +506,15 @@ ezz<-function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
 
 	p<-zptests<-c();
 	if(debug) cat("\nRunning zptest on k n1\'s and n2\'s.");
-	for(k in 0:n1){zptests<-c(zptests,zptest(k,0:n2,n1,n2,n)[,6]);if(debug) cat('.');}
+	zptests<-outer(0:n1,0:n2,FUN="zptest",n1=n1,n2=n2,n=n,zponly=T);
 	zptests[is.nan(zptests)]<-9999;
 
 	for(i in 1:dim(output)[1]){
-		sup<-c();
+		sup<-c(); cat('.');
+		keep<-abs(zptests)>abs(output$zp[i]);
 		for(j in seq(thetas[1],thetas[2],step)){
-			zptemp<-c();
 			if(debug) cat("\nRunning zpprob on n1\'s and n2\'s.");
-			for(k in 0:n1){zptemp<-c(zptemp,zpprob(k,0:n2,n1,n2,j));
-				if(debug) cat('.');}
-			keep<-abs(zptests)>abs(output$zp[i]);
+			zptemp<-outer(0:n1,0:n2,FUN="zpprob",n1=n1,n2=n2,th=j);
 			sup<-c(sup,sum(zptemp[keep]));
 		}
 		p<-c(p,max(sup));
@@ -523,16 +523,19 @@ ezz<-function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
 	output<-cbind(output,p,sig);
 	rownames(output)<-quant;
 	if(noob){output<-output[,c(1:5,8,9)];}
+	print(proc.time()[3]-tstart);
 	output;
 }
 
-zptest<-function(x1,x2,n1,n2,n){
+zptest<-function(x1,x2,n1,n2,n,zponly=F){
 	that1<-x1/n1; that2<-x2/n2;
 	ttil<-(x1+x2)/n;
 	denom<-sqrt(ttil*(1 - ttil)*(1/n1 + 1/n2));
 	zp<-(that1 - that2)/denom;
-	output<-cbind(x1,that1,x2,that2,ttil,zp);
-	output;
+	if(zponly){return(zp);}else{
+		output<-cbind(x1,that1,x2,that2,ttil,zp);
+		return(output);
+	}
 }
 
 zpprob<-function(x1,x2,n1,n2,th){
