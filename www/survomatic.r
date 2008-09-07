@@ -220,7 +220,7 @@ so you won\'t have to paste them in next time. Instead you can type
 		sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05,c(1:2,5)],ncol=3);
 	} else {sigqreg<-matrix(NA,ncol=3);}
 	if(dim(sigqreg)[1]==0){sigqreg<-matrix(NA,ncol=3);}
-	lz<-dim(sigzsc)[1];lqr<-dim(sigqreg)[1];browser();
+	lz<-dim(sigzsc)[1];lqr<-dim(sigqreg)[1];
 	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,
 		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(x,sigqreg[,1])},sigzsc[,1]);
 	report<-cbind(report,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,
