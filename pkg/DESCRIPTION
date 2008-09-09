@@ -1,0 +1,12 @@
+Package: survomatic
+Type: Package
+Title: Analysis of longevity data.
+Version: 1.0
+Date: 2008-09-09
+URL: http://rmodest.r-forge.r-project.org/
+Depends: survival, tcltk, surv2sample, quantreg, R (>= 2.6.0)
+Author: Alex F. Bokov and Jonathan Gelfond
+Maintainer: Alex F. Bokov <bokov@uthscsa.edu>
+Description: Analyzes longevity data.
+License: LGPL
+LazyLoad: yes
