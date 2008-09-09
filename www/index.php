@@ -43,7 +43,8 @@ echo $contents; } ?>
 
 <!-- end of project description -->
 
-<p> Hi, folks. I haven't yet gotten around to cleaning up the documentation to make the code load properly as an R package, but in the meantime here is the raw source for some of the files: </p>
+<p>Breaking news. Survomatic is now available as a standard package. To install, type: install.packages("lme4", repos = "http://r-forge.r-project.org")<br>
+But be warned, this is my first package ever, and before I packaged it, I was distributing Survomatic using a system of my devising, and there may be some legacy assumptions the scripts make that are no longer true. These will be fixed quickly, because they should for the most part be glaringly obvious.</p>
 
 <ul>
 <li><a href='rmodest3.r'>rmodest3.r</a>, the core mortality estimation module.</li>
