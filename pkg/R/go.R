@@ -188,7 +188,7 @@ so you won\'t have to paste them in next time. Instead you can type
 
 	if(top){
 		xhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));
-		yhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));}
+		yhzpars<-rbind(c(ymod$g$estimate,NA),c(xmod$gm$estimate));}
 	cat("\n\nPlotting hazard curves.\n");
 	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
 	lazyhazplots(list(xd30),xhzpars,30,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
