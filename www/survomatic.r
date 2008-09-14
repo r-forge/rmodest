@@ -1,7 +1,7 @@
-ltry<-try(library(survomatic));
+ltry<-try(library(Survomatic));
 if(class(ltry)=='try-error'){
-	install.packages('survomatic',repos='http://r-forge.r-project.org');}
-ltry<-try(library(survomatic));
+	install.packages('Survomatic',,c('http://www.rforge.net/','http://cran.r-project.org/');}
+ltry<-try(library(Survomatic));
 if(class(ltry)=='try-error'){
 	cat('\nProblem installing library. Functions may not work but
 your data is still safe. See if you have a problem with
