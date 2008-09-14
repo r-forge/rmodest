@@ -1,6 +1,6 @@
 `go` <-
 function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
-	options(warn=-1);options(show.error.messages=F);
+	options(warn=-1);options(show.error.messages=T);
 	quantiles<-list(seq(.01,.99,.01),seq(.05,.95,.05),seq(.1,.9,.1),seq(.2,1,.2));
 	mycall<-strsplit(as.character(sys.call()[1]),"\\$")[[1]];
 	if(length(mycall)>1){
@@ -18,37 +18,39 @@ function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
 		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report; path<-d$path;
 		sigqreg<-d$sigqreg;sigzsc<-d$sigzsc;
 	}else{top=T;}
-	if(missing(path)&top&save){
-		message<-"Where would you like to save your results?\n";
-		choices<-c("Let me choose using the point and click method.",
-			   "Let me type in the location from the console.",
-			   "I don\'t want to save any files. Run analysis without saving.");
-		cat(message);
-		input<-menu(choices,graphics=T,title=message);
-		switch(input,
-			{path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
-			{path<-readline("Please type in the location where you would like to save files: ");
-			   path<-paste(path,"/",sep="");},
-			{save<-F;cat('\nContinuing without saving.');}
-		)
-		if(save){cat('\nResults will be saved to:',path,'\n');}
-	} else {path=NULL;}
-	if(missing(x)&top){
+	if(missing(path)){
+		if(top&save){
+			message<-"Where would you like to save your results?\n";
+			choices<-c("Let me choose using the point and click method.",
+				"Let me type in the location from the console.",
+				"I don\'t want to save any files. Run analysis without saving.");
+			cat(message);
+			input<-menu(choices,graphics=T,title=message);
+			switch(input,
+				{path<-paste(tclvalue(tkchooseDirectory()),"/",sep="");},
+				{path<-readline("Please type in the location where you would like to save files: ");
+				path<-paste(path,"/",sep="");},
+				{save<-F;path=NULL;cat('\nContinuing without saving.');}
+			);
+			if(save){cat('\nResults will be saved to:',path,'\n');}
+		} else {path=NULL;}
+	}
+	if(missing(x)){
 		cat("\nYou need a group to compare. Please copy and paste one column of survival times from a spreadsheet.
 They don\'t have to be in order, but make sure there are no empty spaces. Hit the enter key when you 
 are done.\n");
 		x<-scan(); 
 	}
-	if(length(xynames)<2&top){xynames[1]<-readline("Please give a brief name for the first group: ");}
-	if(missing(y)&top){
+	if(length(xynames)<2){xynames[1]<-readline("Please give a brief name for the first group: ");}
+	if(missing(y)){
 		cat("\nYou need a second group to compare. Please copy and paste one column of survival times from a 
 spreadsheet. They don\'t have to be in order, but make sure there are no empty spaces. Hit 
 the enter key when you are done.\n");
 		y<-scan(); 
 	}
-	if(length(xynames)<2&top){xynames[2]<-readline("Please give a brief name for the second group: ");}
+	if(length(xynames)<2){xynames[2]<-readline("Please give a brief name for the second group: ");}
+	xynames<-gsub('[[:space:]]+','.',xynames)
 	if(save&top){
-		# ought to globally replace spaces with dots here
 		assign(xynames[1],x,envir=.GlobalEnv);
 		assign(xynames[2],y,envir=.GlobalEnv);
 		cat("The survival times for the two groups have been saved as",xynames[1],"and",xynames[2],"inside R 
@@ -93,7 +95,7 @@ so you won\'t have to paste them in next time. Instead you can type
 			}
 			#cat('\nTrying quantiles...',paste(quantiles[[i]],collapse=" "));
 			qreg<-rq(log(xy)~relevel(factor(group),2),tau=quantiles[[i]]);i<-i+1;
-			qreg.sum<-try(summary(qreg,se='ker')); cat('.');
+			qreg.sum<-try(summary(qreg,se='boot')); cat('.');
 		}
 		if(class(qreg.sum)!="character"){
 			qreg.tab<-c(); qreg.sig=F;
@@ -188,7 +190,7 @@ so you won\'t have to paste them in next time. Instead you can type
 
 	if(top){
 		xhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));
-		yhzpars<-rbind(c(ymod$g$estimate,NA),c(xmod$gm$estimate));}
+		yhzpars<-rbind(c(ymod$g$estimate,NA),c(ymod$gm$estimate));}
 	cat("\n\nPlotting hazard curves.\n");
 	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
 	lazyhazplots(list(xd30),xhzpars,30,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
@@ -213,8 +215,19 @@ so you won\'t have to paste them in next time. Instead you can type
 			rname<-paste(paste(xynames,collapse=""),"surv",sep=".");
 			fname<-paste(path,rname,".rdata",sep="");
 			assign(rname,out);
-			formals(.First)$x<-rname;
-			save(list=c(rname),file=fname);
+			.First<-function(x=rname){
+                                ltry<-try(library(survomatic));
+                                if(class(ltry)=='try-error'){
+                                        install.packages('survomatic',repos='http://r-forge.r-project.org');}
+                                ltry<-try(library(survomatic));
+                                if(class(ltry)=='try-error'){
+                                        cat('\nProblem installing library. Functions may not work but
+your data is still safe. See if you have a problem with
+your internet connection. If it\'s working properly and
+you still get this message, contact
+alex.bokov@gmail.com\n');} else {.fn<<-get(x);.fn$go();rm(.fn,pos=parent.frame())}
+                        }
+			save(list=c(rname,'.First'),file=fname);
 			cat("\nYour results have been saved as ",fname);
 		}
 	}

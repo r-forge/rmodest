@@ -47,9 +47,11 @@ echo $contents; } ?>
 But be warned, this is my first package ever, and before I packaged it, I was distributing Survomatic using a system of my devising, and there may be some legacy assumptions the scripts make that are no longer true. These will be fixed quickly, because they should for the most part be glaringly obvious.</p>
 
 <ul>
-<li><a href='rmodest3.r'>rmodest3.r</a>, the core mortality estimation module.</li>
-<li><a href='survomatic.r'>survomatic.r</a>, a user friendly wrapper for rmodest3 and a whole raft of other survival functions. Its default behavior at the moment is to prompt you for everything and then output a self-executing .rdata file that you can run again later. Produces Kaplan-Meier survival plots, quantile regression plots, and mortality hazard plots.</li>
+<li><a href='rmodest3.r'>rmodest3.r</a>, the core mortality estimation module. This is the old version and is not being maintained. The maintained version is now inside the survomatic package as survopt.R and some smaller helper functions.</li>
+<li><a href='survomatic.r'>survomatic.r</a>, a user friendly wrapper for rmodest3 and a whole raft of other survival functions. Its default behavior at the moment is to prompt you for everything and then output a self-executing .rdata file that you can run again later. Produces Kaplan-Meier survival plots, quantile regression plots, and mortality hazard plots. Is now just a stub for loading the packaged version of survomatic.</li>
 <li><a href='simsurv.r'>simsurv.r</a>, a script for creating arbitrary numbers of datasets with known Gompertz/Logistic parameters. Useful for testing survival analysis software.</li>
+<li><a href='wm2r.pl'>wm2r.pl</a>, a Perl script for converting output from WinModest to a tabular format suitable for export to R.</li>
+<li><a href='wmtron.pl'>wmtron.pl</a>, a Perl script that uses <a href='http://mayakron.altervista.org/opensource/Windows/data/Tron.zip'>Tron</a> to automate the button clicking on WinModest. You must download and unzip the tron binary and put it someplace in your path, such as the \windows\system32\ directory. Furthermore, this script is unsupported; you must read it and modify it to fit your needs (especially the mouse-click coordinates for your screen resolution). It will NOT work on your machine as-is. Also, it makes no attempt to launch Winmodest; that has to be done from a batch file. If you're interested in discussing how to automate WinModest, please contact me, but in the long-run button clicking scripts are not the answer. That's one of the reasons I'm writing rmodest in the first place.</li>
 </ul>
 
 <p>More to come, stay tuned.</p>

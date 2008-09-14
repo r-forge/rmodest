@@ -11,8 +11,8 @@ function(ts,pars,ints,cols=rainbow(length(ts)),xlim=NULL,add=F,main=""){
 		plot(1+ts[[1]]$time,ts[[1]]$ux,log='xy',type='p', pch=3,
 			xlim=xrng,ylim=c(mnx,mx),xlab="Time",ylab="Hazard Rate",col=cols[1],main=main);
 	} 
-	lines(1:xrng[2],srvhaz(1:xrng[2],pars[1,1],pars[1,2],i=ints[1]),col=cols[1],lty=2);
-	lines(1:xrng[2],srvhaz(1:xrng[2],pars[2,1],pars[2,2],pars[2,3],i=ints[1]),col=cols[1],lty=1);
+	lines(1:xrng[2],srvhaz(1:xrng[2],pars[1,1],pars[1,2],i=ints[1]),col=cols[1],lty=2,lwd=2);
+	lines(1:xrng[2],srvhaz(1:xrng[2],pars[2,1],pars[2,2],pars[2,3],i=ints[1]),col=cols[1],lty=1,lwd=2);
 	xrng<-xrng[1]:xrng[2];
 	if(length(ts)>1){
 		for(j in 2:length(ts)){
