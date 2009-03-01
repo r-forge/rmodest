@@ -1,5 +1,6 @@
 `go` <-
-function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
+function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350,slwd=4,
+scol=c('darkred',1),spch=24:25,spcex=0,splwd=slwd,spbg=scol,sleg=T,sxcex=1.5,sxlwd=3,qstart=1,demint=30, qrse='boot'){
 	options(warn=-1);options(show.error.messages=T);
 	quantiles<-list(seq(.01,.99,.01),seq(.05,.95,.05),seq(.1,.9,.1),seq(.2,1,.2));
 	mycall<-strsplit(as.character(sys.call()[1]),"\\$")[[1]];
@@ -11,12 +12,13 @@ function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350){
 		}}
 		x<-d$x;y<-d$y;xynames<-d$xynames;smry<-d$smry;zsc<-d$zsc;xy<-d$xy;
 		group<-d$group;lr<-d$lr;qreg<-d$qreg;qreg.sum<-d$qreg.sum;tt<-d$tt;
-		qreg.tab<-d$qreg.tab;xmod<-d$xmod;ymod<-d$ymod;xymod<-d$xymod;
-		xd1<-d$xd1;xd7<-d$xd7;xd30<-d$xd30;yd1<-d$yd1;yd7<-d$yd7;yd30<-d$yd30;
-		xhzpars<-d$xhzpars;yhzpars<-d$yhzpars;xymod.tab<-d$xymod.tab;
+		qreg.tab<-d$qreg.tab;xmod<-d$xmod;ymod<-d$ymod;xymod<-d$xymod;demint<-d$demint;
+		xd<-d$xd;yd<-d$yd;xhzpars<-d$xhzpars;yhzpars<-d$yhzpars;xymod.tab<-d$xymod.tab;
 		modx<-d$modx;mody<-d$mody;modxy<-d$modxy;xysurvfit<-d$xysurvfit;
 		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report; path<-d$path;
-		sigqreg<-d$sigqreg;sigzsc<-d$sigzsc;
+		sigqreg<-d$sigqreg;sigzsc<-d$sigzsc;slwd<-d$slwd;
+		scol<-d$scol;spch<-d$spch;spcex<-d$spcex;splwd<-d$splwd;spbg<-d$spbg;
+		sleg<-d$sleg;sxcex<-d$sxcex;sxlwd<-d$sxlwd;
 	}else{top=T;}
 	if(missing(path)){
 		if(top&save){
@@ -87,15 +89,15 @@ so you won\'t have to paste them in next time. Instead you can type
 	print(lr);
 	cat("\nDoing quantile regression...");
 	if(top){
-		i<-1;qreg.sum<-0;class(qreg.sum)<-"try-error";
+		i<-qstart;qreg.sum<-0;class(qreg.sum)<-"try-error";
 		while(class(qreg.sum)=="try-error"){
 			if(i>length(quantiles)){
 				qreg.sum<-"Unable to perform quantile regression.";
 				next;
 			}
 			#cat('\nTrying quantiles...',paste(quantiles[[i]],collapse=" "));
-			qreg<-rq(log(xy)~relevel(factor(group),2),tau=quantiles[[i]]);i<-i+1;
-			qreg.sum<-try(summary(qreg,se='boot')); cat('.');
+			qreg<-rq(log(xy)~factor(group,levels=xynames),tau=quantiles[[i]]);i<-i+1;
+			qreg.sum<-try(summary(qreg,se=qrse)); cat('.');
 		}
 		if(class(qreg.sum)!="character"){
 			qreg.tab<-c(); qreg.sig=F;
@@ -110,8 +112,9 @@ so you won\'t have to paste them in next time. Instead you can type
 
 	cat("\nFinding the best mortality models..."); 
 	if(top){xmod<-ymod<-xymod<-list();
-		xd1<-demog(x); xd7<-demog(x,7); xd30<-demog(x,30);
-		yd1<-demog(y); yd7<-demog(y,7); yd30<-demog(y,30);
+		xd<-demog(x,demint); yd<-demog(y,demint);
+		#xd1<-demog(x); xd7<-demog(x,7); xd30<-demog(x,30);
+		#yd1<-demog(y); yd7<-demog(y,7); yd30<-demog(y,30);
 		xmod$g<-opsurv('g',x,par=rep(5e-7,4)); ymod$g<-opsurv('g',y,par=rep(5e-7,4));
 		xmod$gm<-opsurv('gm',x,par=rep(5e-7,4)); ymod$gm<-opsurv('gm',y,par=rep(5e-7,4));
 		xmod$l<-opsurv('l',x,par=rep(5e-7,4)); ymod$l<-opsurv('l',y,par=rep(5e-7,4));
@@ -156,34 +159,49 @@ so you won\'t have to paste them in next time. Instead you can type
 	if(top){
 	sigzsc<-zsc[which(zsc$sig=="*"),c(2,4,8)];
 	if(class(qreg.tab)!="character"){
-		sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05,c(1:2,5)],ncol=3);
+		sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05&qreg.tab[,3]>0,c(1:2,5)],ncol=3);
 	} else {sigqreg<-matrix(NA,ncol=3);}
 	if(dim(sigqreg)[1]==0){sigqreg<-matrix(NA,ncol=3);}
 	lz<-dim(sigzsc)[1];lqr<-dim(sigqreg)[1];
 	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,
 		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(x,sigqreg[,1])},sigzsc[,1]);
-	report<-cbind(report,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,
-		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(y,sigqreg[,1])},sigzsc[,2]));
-	rownames(report)<-c('n','mean','median','90%','max','log-rank',"",'initial mortality','mortality acceleration',"",if(match(NA,sigqreg[,1],no=F)){NA}else{paste("(qr) longevity of quantile",sigqreg[,1])},paste("(z score) number alive at quantile",rownames(sigzsc)))[1:dim(report)[1]];
-	colnames(report)<-xynames;
+	report<-cbind(report,NA,NA,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(y,sigqreg[,1])},sigzsc[,2]),NA,NA);
+	report[2,2]<-mean(x)-sd(x)/sqrt(length(x)); report[2,3]<-mean(x)+sd(x)/sqrt(length(x));
+	report[2,5]<-mean(y)-sd(y)/sqrt(length(y)); report[2,6]<-mean(y)+sd(y)/sqrt(length(y));
+	report[3:4,2:3]<-qci(x,c(.5,.9)); report[3:4,5:6]<-qci(y,c(.5,.9));
+	if(match(NA,sigqreg[,1],no=F)==0){
+		report[11:(10+dim(sigqreg)[1]),2:3]<-qci(x,sigqreg[,1]);
+		report[11:(10+dim(sigqreg)[1]),5:6]<-qci(y,sigqreg[,1]);
+	}
+	rownames(report)[c(1:3,5,6,8,9)]<-c('n','mean','median','max','log-rank','initial mortality','mortality acceleration');
+	if(match(NA,sigqreg[,1],no=F)==0){
+		rownames(report)[11:(10+dim(sigqreg)[1])]<-paste("(qr) age, quantile",sigqreg[,1]);
+	}
+	if(dim(sigzsc)[1]>0){
+		rownames(report)[(11+dim(sigqreg)[1]):dim(report)[1]]<-paste("(score) # alive,  quantile",rownames(sigzsc));
+	}
+	#colnames(report)[c(1]<-c(xynames[1],'LBx95','UBx95','xynames[2]','LBy95','UBy95');
 	report<-cbind(report,p=
 	   c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],NA,lr$pval,NA,xymod.tab[,5],NA,sigqreg[,3],sigzsc[,3]));
 	}
+	bndlbs<-c('LB95','UB95');
+	colnames(report)<-c(xynames[1],paste(xynames[1],bndlbs,sep='.'),
+			    xynames[2],paste(xynames[2],bndlbs,sep='.'),'p');
 
 	if(top){xysurvfit<-survfit(Surv(xy)~group);}
 	tmain<-paste(xynames,collapse=" vs. ");
 	cat("\nPlotting survival curves.\n");
-	plot(xysurvfit,lwd=1,bty="n",xlim=c(0,xlim));
-	for(i in 1:2){points(xysurvfit[i],pch=23+i,cex=1.5,lwd=1.5,bg=c('gray20','white')[i]);}
+	plot(xysurvfit,lwd=slwd,bty="n",xlim=c(0,xlim),col=scol,cex.axis=sxcex,las=1,yscale=100);
+	axis(1,lwd=sxlwd,labels=F);axis(2,lwd=sxlwd,labels=F);
+	for(i in 1:2){points(xysurvfit[i],pch=spch[i],cex=spcex[i],lwd=splwd[i],bg=spbg[i]);}
 	title(main=paste(tmain,"Survival"));
-	legend("topright",legend=xynames[2:1],pch=24:25,y.intersp=1.5,
-		#inset=-0.006*psize,-+
-		bty="n",pt.cex=1.5,cex=1.5,lwd=1.5,pt.bg=c('gray20','white'));
+	if(sleg){legend("topright",legend=xynames[2:1],pch=spch,y.intersp=1.5,
+		bty="n",pt.cex=spcex,cex=sxcex,lwd=splwd,pt.bg=spbg,col=scol);}
 	
 	if(save){graphsave(path,xynames,".srv.eps",prompt);}else{readline("Press enter to continue.")}
 	if(class(qreg.sum)!="character"){
 		cat("\n\nPlotting quantile regression curves.\n");
-		plot(qreg.sum,parm=2,ols=F,main=paste(tmain,"Quantile Regression"));
+		plot(qreg.sum,parm=2,ols=F,ylim=c(-1,1),main=paste(tmain,"Quantile Regression"));
 		points(sigqreg[,1],sigqreg[,2],col='red',lwd=3);
 		if(save){graphsave(path,xynames,".qr.eps",prompt);}else{readline("Press enter to continue.")}
 	}
@@ -193,8 +211,8 @@ so you won\'t have to paste them in next time. Instead you can type
 		yhzpars<-rbind(c(ymod$g$estimate,NA),c(ymod$gm$estimate));}
 	cat("\n\nPlotting hazard curves.\n");
 	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
-	lazyhazplots(list(xd30),xhzpars,30,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
-	lazyhazplots(list(yd30),yhzpars,30,xlim=xlim/30,cols='blue',add=T);
+	lazyhazplots(list(xd),xhzpars,demint,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
+	lazyhazplots(list(yd),yhzpars,demint,xlim=xlim/30,cols='darkred',add=T);
 	if(save){graphsave(path,xynames[2],".hz.eps",prompt);}else{readline("Press enter to continue.")}
 
 	if(top){
@@ -202,12 +220,13 @@ so you won\'t have to paste them in next time. Instead you can type
 		if(length(sig.tests)==0){sig.tests<-0;names(sig.tests)<-"None";}
 		out<-list(smry=smry,zsc=zsc,x=x,y=y,xy=xy,xynames=xynames,path=path,
 			group=group,lr=lr,tt=tt,tests=tests,sig.tests=sig.tests,
-			qreg=qreg,qreg.tab=qreg.tab,qreg.sum=qreg.sum,
-			xd1=xd1,xd7=xd7,xd30=xd30,
-			yd1=yd1,yd7=yd7,yd30=yd30,xhzpars=xhzpars,yhzpars=yhzpars,
+			qreg=qreg,qreg.tab=qreg.tab,qreg.sum=qreg.sum,demint=demint,
+			xd=xd,yd=yd,xhzpars=xhzpars,yhzpars=yhzpars,
 			xmod=xmod,ymod=ymod,modx=modx,mody=mody,
 			modxy=modxy,xymod=xymod,report=report,sigqreg=sigqreg,
-			sigzsc=sigzsc,xymod.tab=xymod.tab,xysurvfit=xysurvfit)
+			sigzsc=sigzsc,xymod.tab=xymod.tab,xysurvfit=xysurvfit,
+			slwd=slwd,scol=scol,spch=spch,spcex=spcex,splwd=splwd,
+			spbg=spbg,sleg=sleg,sxcex=sxcex,sxlwd=sxlwd)
 		class(out)<-"survomatic";
 		go<-get(as.character(sys.call()[1]));
 		out$go<-go; out$sys<-function(q){print(group);print(sys.status());print(sys.call());}
@@ -216,10 +235,11 @@ so you won\'t have to paste them in next time. Instead you can type
 			fname<-paste(path,rname,".rdata",sep="");
 			assign(rname,out);
 			.First<-function(x=rname){
-                                ltry<-try(library(survomatic));
+				library(utils);
+                                ltry<-try(library(Survomatic));
                                 if(class(ltry)=='try-error'){
-                                        install.packages('survomatic',repos='http://r-forge.r-project.org');}
-                                ltry<-try(library(survomatic));
+                                        install.packages('Survomatic',repos=c('http://rforge.net/','http://cran.r-project.org/'));}
+                                ltry<-try(library(Survomatic));
                                 if(class(ltry)=='try-error'){
                                         cat('\nProblem installing library. Functions may not work but
 your data is still safe. See if you have a problem with
@@ -236,7 +256,7 @@ alex.bokov@gmail.com\n');} else {.fn<<-get(x);.fn$go();rm(.fn,pos=parent.frame()
 	print(names(sig.tests));
 	cat("\nExecutive Summary:\n");
 	print(report[1:5,],na.print="");
-	cat('\n-----------------------\nLog-rank: p =',report[6,3],'\n');
+	cat('\n-----------------------\nLog-rank: p =',report[6,7],'\n');
 	cat('\n-----------------------\nMortality\n');
 	print(report[8:9,],na.print="");
 	cat('\n-----------------------\nQuantile Regression & Z-score\n');

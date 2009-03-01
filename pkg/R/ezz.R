@@ -27,9 +27,14 @@ function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
 
 	p<-zptests<-c();
 	if(debug) cat("\nRunning zptest on k n1\'s and n2\'s.");
+	# below line is candidate for porting to C
+	# args: int *n1, int *n2, and the zptest function which should also be ported
 	zptests<-outer(0:n1,0:n2,FUN="zptest",n1=n1,n2=n2,n=n,zponly=T);
 	zptests[is.nan(zptests)]<-9999;
 
+	# below for statement is candidate for porting to C
+	# args: float *zptests, float *zp, float *thetas1, float *thetas2, float *step, 
+	#	int *n1, int *n2, and the zpprob function that should also be ported
 	for(i in 1:dim(output)[1]){
 		sup<-c(); cat('.');
 		keep<-abs(zptests)>abs(output$zp[i]);
