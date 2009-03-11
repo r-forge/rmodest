@@ -1,37 +1,104 @@
 #include <math.h>
 #include <stdio.h>
 
+// double bebxf(double *b, int *x){return(exp(*b * *x));}
+// double nbebxf(double *b, int *x){return(1);}
+// double baebxf(double *a, double *b, double *ebx){return(*a * (*ebx - 1)/ *b);}
+// double nbaebxf(double *a, double *b, int *x, double *ebx){return(*a * *x);}
+// double ssrvf(double *a, double *c, double *s, double *aebx, int *x){
+// 	return(log(exp(- *c * *x)/pow((*s * *aebx + 1),(1/ *s))));
+// }
+// double nssrvf(double *a, double *c, double *s, double *aebx, int *x){- *aebx - *c * *x;}
+// 
+// void ofx(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
+// {
+// 	int n = *size;
+// 	double ebx, aebx;
+// 	double bebxf(), nbebxf(), baebxf(), nbaebxf(), ssrvf(), nssrvf();
+// 	double (*ebxf)(), (*aebxf)(), (*srvf)();
+// 	printf("Declarations done\n");
+// 	if(*b > 2E-19){ebxf = bebxf; aebxf = baebxf;
+// 	printf("B is not zero\n");
+// 	} else {printf("B is zero\n"); ebxf = nbebxf; aebxf = nbaebxf;}
+// 	if(*s > 6E-10){printf("S is not zero\n");srvf = ssrvf;
+// 	} else {printf("S is zero\n");srvf = nssrvf;}
+// 	while(--n >= 0){
+// 		ebx = (*ebxf)(b,x[n]); aebx = (*aebxf)(a,b,x,&ebx);
+// 		printf("exb is %f5.5 and aebx is %f5.5\n",ebx, aebx);
+// 		*ans = *ans + (*srvf)(a,c,s,&aebx,x[n]);
+// 		printf("so far ans is %f5.5\n",*ans);
+// 		*ans = *ans + log(*c + *a * ebx/(*s * aebx + 1)) * censor[n];
+// 		printf("now ans is %f5.5\n",*ans);
+// 	}
+// }
+
+
+
+void oflm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
+{
+	int n = *size;
+	double ebx, aebx;
+	while(--n >= 0){
+		if(*b < 2E-19){ebx = 1; aebx = *a * x[n];
+		} else {ebx = exp(*b * x[n]); aebx = *a * (ebx -1)/ *b; }
+		*ans = *ans + log(*c + *a * ebx/(*s * aebx + 1)) * censor[n];
+		if(*s < 6E-10){ *ans = *ans - aebx - *c * x[n];
+		} else {*ans = *ans + log(exp(- *c * x[n])/pow((*s * aebx + 1),(1/ *s)));}
+	}
+}
+
 void ofgm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
-	int n = *size; double expBX; double AdivB = *a/ *b;
-	while ( --n >= 0){
-		expBX = exp(*b * x[n]);
-		*ans = *ans + log(*c + *a * expBX) * censor[n];
-		*ans = *ans -(*c * x[n]) - AdivB * (expBX - 1);
-	}
+	double mys = 0;
+	oflm(a, b, c, &mys, x, size, censor, ans);
+/*	int n = *size; 
+	if(*b == 0){
+		while(--n >= 0){
+			*ans = *ans + log(*c + *a) * censor[n] -(*c * x[n]) - *a * x[n];
+		}
+	} else {
+		double expBX; double AdivB = *a/ *b;
+		while ( --n >= 0){
+			expBX = exp(*b * x[n]);
+			*ans = *ans + log(*c + *a * expBX) * censor[n];
+			*ans = *ans -(*c * x[n]) - AdivB * (expBX - 1);
+		}
+	}*/
 }
+
 void ofg(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
-	*c = 0;
-	ofgm(a, b, c, s, x, size, censor, ans);
+	double myc = 0; double mys = 0;
+	oflm(a, b, &myc, &mys, x, size, censor, ans);
 }
 /* The objective function for the Logistic and Logistic-Makeham models (if c==0) */
-void oflm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
+/*void oflm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 { 
-	int n = *size; double expBX, add1toSAexpBXminus1divB;
-	double prdASdivB = *a * *s/ *b;
-	while ( --n >= 0){
-		expBX = exp(*b * x[n]); 
-		add1toSAexpBXminus1divB = 1 + prdASdivB * (expBX - 1);
-		*ans = *ans + log((*c + *a * expBX/add1toSAexpBXminus1divB)) * censor[n];
-		*ans = *ans + log(exp(- *c * x[n]) * pow(add1toSAexpBXminus1divB,(- 1/ *s)));
+	int n = *size; 
+	if(*b == 0){
+		while(--n >= 0){
+			*ans = *ans + log(*c + 1/(*s * x[n] + 1)) * censor[n];
+			*ans = *ans - *c * x[n] -log((*a * *s * x[n] +1)/ *s);
+		}
+	} else {
+		double expBX, add1toSAexpBXminus1divB;
+		double prdASdivB = *a * *s/ *b;
+		while ( --n >= 0){
+			expBX = exp(*b * x[n]); 
+			add1toSAexpBXminus1divB = 1 + prdASdivB * (expBX - 1);
+			*ans = *ans + log((*c + *a * expBX/add1toSAexpBXminus1divB)) * censor[n];
+			*ans = *ans + log(exp(- *c * x[n]) * pow(add1toSAexpBXminus1divB,(- 1/ *s)));
+		}
 	}
-}
+}*/
+
+
 void ofl(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
-	*c = 0;
-	oflm(a, b, c, s, x, size, censor, ans);
+	double myc = 0;
+	oflm(a, b, &myc, s, x, size, censor, ans);
 }
+
 void gg(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
 	int n = *size;

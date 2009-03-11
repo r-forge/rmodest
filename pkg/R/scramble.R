@@ -37,7 +37,7 @@ function(data,foo,...){
 	out$statistic;
 }
 
-`startpars`<-
+`startpars.old`<-
 function(x,y,label,perms=10){
 	d<-int2tab(x,y); lxy<-dim(d)[1]; pr<-matrix(nrow=lxy,ncol=perms);
 	for(i in 1:perms){pr[,i]<-sample(d[,2],lxy);}
@@ -134,7 +134,7 @@ function(x,y,label,perms=10){
 	invisible(fits);
 }
 
-`ressurv` <-
+`ressurv.old` <-
 function(x,y,label,resam=1000,pars=NULL,...){
 	lx<-length(x);ly<-length(y);
 	rsx<-matrix(nrow=lx,ncol=resam);
@@ -149,7 +149,7 @@ function(x,y,label,resam=1000,pars=NULL,...){
 	# need to write some kind of validation function for fits
 	if(is.null(pars)|length(pars)!=4){
 		if(exists(parslabel)){pars<-get(parslabel);}
-		else{pars<-startpars(x,y,label,perms=10);}
+		else{pars<-startpars.old(x,y,label,perms=10);}
 	}
 	for(i in 1:(resam+1)){
 		for(j in names(pars)){
@@ -165,7 +165,287 @@ function(x,y,label,resam=1000,pars=NULL,...){
 	}
 }
 
-`permsurv` <-
+`findpars`<-
+function(x,y,nil=1e-7,bnil=0.005,pf=mean,labels=NULL,summary=F,id=0){
+	lx<-length(x);ly<-length(y);sumx<-sum(x);sumy<-sum(y);
+	xemax<-lx*log(lx/sumx)-lx;yemax<-ly*log(ly/sumy)-ly;
+	es.e<-list(maximum=xemax+yemax,
+		   estimate=c(lx/sumx,ly/sumy),group0=list(maximum=xemax),
+		   group1=list(maximum=yemax),titer=0,runtime=0);
+	partemp<-modpars(es.e$estimate,'e','g',nil=nil,trim=T);
+	partemp[c(2,4)]<-bnil;
+	es.g<-opsurv(x,y,'g',par=partemp,minout=es.e$maximum);
+	es.ga<-opsurv(x,y,'g',cons=c(F,T,T,T),
+		      par=modpars(es.g$estimate,'g',cno=c(F,T,T,T),pf=pf,trim=T));
+	if(es.ga$maximum>es.g$maximum){
+		es.g<-opsurv(x,y,'g',
+			     par=modpars(es.ga$estimate,'g',cni=c(F,T,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.gb<-opsurv(x,y,'g',cons=c(T,F,T,T),
+		      par=modpars(es.g$estimate,'g',cno=c(T,F,T,T),pf=pf,trim=T));
+	if(es.gb$maximum>es.g$maximum){
+		es.g<-opsurv(x,y,'g',
+			     par=modpars(es.gb$estimate,'g',cni=c(T,F,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	partemp<-modpars(es.g$estimate,'g','gm',nil=nil,trim=T);
+	es.gm<-opsurv(x,y,'gm',par=partemp);
+	es.gma<-opsurv(x,y,'gm',cons=c(F,T,T,T),
+		       par=modpars(es.gm$estimate,'gm',cno=c(F,T,T,T),pf=pf,trim=T));
+	if(es.gma$maximum>es.gm$maximum){
+		es.gm<-opsurv(x,y,'gm',
+			     par=modpars(es.gma$estimate,'gm',cni=c(F,T,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.gmb<-opsurv(x,y,'gm',cons=c(T,F,T,T),
+		       par=modpars(es.gm$estimate,'gm',cno=c(T,F,T,T),pf=pf,trim=T));
+	if(es.gmb$maximum>es.gm$maximum){
+		es.gm<-opsurv(x,y,'gm',
+			     par=modpars(es.gmb$estimate,'gm',cni=c(T,F,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.gmc<-opsurv(x,y,'gm',cons=c(T,T,F,T),
+		       par=modpars(es.gm$estimate,'gm',cno=c(T,T,F,T),pf=pf,trim=T));
+	if(es.gmc$maximum>es.gm$maximum){
+		es.gm<-opsurv(x,y,'gm',
+			     par=modpars(es.gmc$estimate,'gm',cni=c(T,T,F,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.l<-opsurv(x,y,'l',par=partemp);
+	es.la<-opsurv(x,y,'l',cons=c(F,T,T,T),
+		      par=modpars(es.l$estimate,'l',cno=c(F,T,T,T),pf=pf,trim=T));
+	if(es.la$maximum>es.l$maximum){
+		es.l<-opsurv(x,y,'l',
+			     par=modpars(es.la$estimate,'l',cni=c(F,T,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.lb<-opsurv(x,y,'l',cons=c(T,F,T,T),
+		      par=modpars(es.l$estimate,'l',cno=c(T,F,T,T),pf=pf,trim=T));
+	if(es.lb$maximum>es.l$maximum){
+		es.l<-opsurv(x,y,'l',
+			     par=modpars(es.lb$estimate,'l',cni=c(T,F,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.ls<-opsurv(x,y,'l',cons=c(T,T,T,F),
+		      par=modpars(es.l$estimate,'l',cno=c(T,T,T,F),pf=pf,trim=T));
+	if(es.ls$maximum>es.l$maximum){
+		es.l<-opsurv(x,y,'l',
+			     par=modpars(es.ls$estimate,'l',cni=c(T,T,T,F),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.gmlm<-opsurv(x,y,'lm',
+		      par=modpars(es.gm$estimate,'gm','lm',nil=nil,trim=T));
+	es.llm<-opsurv(x,y,'lm',
+		      par=modpars(es.l$estimate,'l','lm',nil=nil,trim=T));
+	# Might wish to consider getting rid of es.gmlm and have the gm output go straight to es.lm
+	if(es.gmlm$maximum<es.llm$maximum){es.lm<-es.llm;} else {es.lm<-es.gmlm;}
+	es.lma<-opsurv(x,y,'lm',cons=c(F,T,T,T),minout=es.lm$maximum,
+		       par=modpars(es.lm$estimate,'lm',cno=c(F,T,T,T),pf=pf,trim=T));
+	if(es.lma$maximum>es.lm$maximum){
+		es.lm<-opsurv(x,y,'lm',
+			     par=modpars(es.lma$estimate,'lm',cni=c(F,T,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.lmb<-opsurv(x,y,'lm',cons=c(T,F,T,T),minout=es.lm$maximum,
+		       par=modpars(es.lm$estimate,'lm',cno=c(T,F,T,T),pf=pf,trim=T));
+	if(es.lmb$maximum>es.lm$maximum){
+		es.lm<-opsurv(x,y,'lm',
+			     par=modpars(es.lmb$estimate,'lm',cni=c(T,F,T,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),minout=es.lm$maximum,
+		       par=modpars(es.lm$estimate,'lm',cno=c(T,T,F,T),pf=pf,trim=T));
+	if(es.lmc$maximum>es.lm$maximum){
+		es.lm<-opsurv(x,y,'lm',
+			     par=modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),minout=es.lm$maximum,
+		       par=modpars(es.lm$estimate,'lm',cno=c(T,T,T,F),pf=pf,trim=T));
+	if(es.lms$maximum>es.lm$maximum){
+		es.lm<-opsurv(x,y,'lm',
+			     par=modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),
+					 cno=c(T,T,T,T),pf=pf,trim=T));}
+	if(!is.null(labels)){
+		write.table(t(c(es.e$max,NA,NA,modpars(es.e$estimate,'e',nil=nil,trim=F),id,'e',nil,NA)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.g$max,es.g$titer,es.g$runtime,
+				modpars(es.g$estimate,'g',nil=nil,trim=F),id,'g',nil,es.g$max-es.e$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.ga$max,es.ga$titer,es.ga$runtime,
+				modpars(es.ga$estimate,'g',cni=c(F,T,T,T),nil=nil,trim=F),id,'ga',nil,
+			        es.g$max-es.ga$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gb$max,es.gb$titer,es.gb$runtime,
+				modpars(es.gb$estimate,'g',cni=c(T,F,T,T),nil=nil,trim=F),id,'gb',nil,
+			        es.g$max-es.gb$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gm$max,es.gm$titer,es.gm$runtime,
+				modpars(es.gm$estimate,'gm',nil=nil,trim=F),id,'gm',nil,
+			        es.gm$max-es.g$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gma$max,es.gma$titer,es.gma$runtime,
+				modpars(es.gma$estimate,'gm',cni=c(F,T,T,T),nil=nil,trim=F),
+				id,'gma',nil,es.gm$max-es.gma$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gmb$max,es.gmb$titer,es.gmb$runtime,
+				modpars(es.gmb$estimate,'gm',cni=c(T,F,T,T),nil=nil,trim=F),
+				id,'gmb',nil,es.gm$max-es.gmb$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gmc$max,es.gmc$titer,es.gmc$runtime,
+				modpars(es.gmc$estimate,'gm',cni=c(T,T,F,T),nil=nil,trim=F),
+				id,'gmc',nil,es.gm$max-es.gmc$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.l$max,es.l$titer,es.l$runtime,
+				modpars(es.l$estimate,'l',nil=nil,trim=F),id,'l',nil,es.l$max-es.g$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.la$max,es.la$titer,es.la$runtime,
+				modpars(es.la$estimate,'l',cni=c(F,T,T,T),nil=nil,trim=F),id,'la',nil,
+			        es.l$max-es.la$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lb$max,es.lb$titer,es.lb$runtime,
+				modpars(es.lb$estimate,'l',cni=c(T,F,T,T),nil=nil,trim=F),id,'lb',nil,
+			        es.l$max-es.lb$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.ls$max,es.ls$titer,es.ls$runtime,
+				modpars(es.ls$estimate,'l',cni=c(T,T,T,F),nil=nil,trim=F),id,'ls',nil,
+			        es.l$max-es.ls$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lm$max,es.lm$titer,es.lm$runtime,
+				modpars(es.lm$estimate,'lm',nil=nil,trim=F),id,'lm',nil,
+			        es.lm$max-max(es.l$max,es.gm$max))),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lma$max,es.lma$titer,es.lma$runtime,
+				modpars(es.lma$estimate,'lm',cni=c(F,T,T,T),nil=nil,trim=F),
+				id,'lma',nil,es.lm$max-es.lma$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lmb$max,es.lmb$titer,es.lmb$runtime,
+				modpars(es.lmb$estimate,'lm',cni=c(T,F,T,T),nil=nil,trim=F),
+				id,'lmb',nil,es.lm$max-es.lmb$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lmc$max,es.lmc$titer,es.lmc$runtime,
+				modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),nil=nil,trim=F),
+				id,'lmc',nil,es.lm$max-es.lmc$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lms$max,es.lms$titer,es.lms$runtime,
+				modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),nil=nil,trim=F),
+				id,'lms',nil,es.lm$max-es.lms$max)),
+			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
+
+		write.table(t(c(es.e$group0$maximum,es.e$group1$maximum,id,'e',nil)),
+			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.g$group0$maximum,es.g$group1$maximum,id,'g',nil)),
+			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.gm$group0$maximum,es.gm$group1$maximum,id,'gm',nil)),
+			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.l$group0$maximum,es.l$group1$maximum,id,'l',nil)),
+			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.lm$group0$maximum,es.lm$group1$maximum,id,'lm',nil)),
+			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
+
+		write.table(t(c(es.gmlm$max,es.gmlm$titer,es.gmlm$runtime,
+				modpars(es.gmlm$estimate,'lm',trim=F),id,'gmlm',nil)),
+			    file=labels$gml,sep='\t',append=T,col.names=F,row.names=F);
+		write.table(t(c(es.llm$max,es.llm$titer,es.llm$runtime,
+				modpars(es.llm$estimate,'lm',trim=F),id,'llm',nil)),
+			    file=labels$gml,sep='\t',append=T,col.names=F,row.names=F);
+	}
+	if(summary){
+		maxs<-c(es.e$max,es.g$max,es.ga$max,es.gb$max,es.gm$max,es.gma$max,es.gmb$max,es.gmc$max,
+			es.l$max,es.la$max,es.lb$max,es.ls$max,es.gmlm$max,es.llm$max,es.lma$max,
+			es.lmb$max,es.lmc$max,es.lms$max);
+		iters<-c(0,es.g$titer,es.ga$titer,es.gb$titer,es.gm$titer,es.gma$titer,es.gmb$titer,
+			es.gmc$titer,es.l$titer,es.la$titer,es.lb$titer,es.ls$titer,es.gmlm$titer,
+			es.llm$titer,es.lma$titer,es.lmb$titer,es.lmc$titer,es.lms$titer);
+		difs<-sign(c(0,es.g$max-es.e$max,es.g$max-es.ga$max,es.g$max-es.gb$max,es.gm$max-es.g$max,
+			es.gm$max-es.gma$max,es.gm$max-es.gmb$max,es.gm$max-es.gmc$max,es.l$max-es.g$max,
+			es.l$max-es.la$max,es.l$max-es.lb$max,es.l$max-es.ls$max,es.gmlm$max-es.gm$max,
+			es.llm$max-es.l$max,es.lm$max-es.lma$max,es.lm$max-es.lmb$max,
+			es.lm$max-es.lmc$max,es.lm$max-es.lms$max));
+		out<-cbind(maxs,iters,difs);
+		#rownames(ests)<-
+		rownames(out)<-c('E','G','Ga','Gb','GM','GMa','GMb','GMc','L','La','Lb','Ls',
+						'GMLM','LLM','LMa','LMb','LMc','LMs');
+		print(out,digits=22);#print(ests);
+		print(sum(out[,2]));invisible(list(results=out));
+	}
+}
+
+`modpars`<-
+function(x,modeli,modelo=NULL,cni=rep(T,4),cno=NULL,nil=1e-7,pf=mean,trim=F){
+	if(sum(is.null(x))>0){print('input params contain nulls!');traceback();browser();};
+	if(is.null(modelo)){modelo<-modeli;}; if(is.null(cno)){cno<-cni;};
+	keepi<-switch(modeli,e=c(1,5),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
+	keepo<-switch(modelo,e=c(1,5),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
+	# Will eventually do more input validation, but for now let's agree to pass 
+	# constraints as vectors of either 4 or 1 logical values
+	cni <- !cni; if(length(cni)==1){cni<-rep(cni,4);};
+	cno <- !cno; if(length(cno)==1){cno<-rep(cno,4);};
+	if(length(cni)+length(cno)!=8){stop('In this version constraints must be specified
+either as a single boolean value or a vector
+of four boolean values. Please fix your input
+and try again.');}
+	keepi<-keepi[c(rep(T,4),!cni)[keepi]];
+	if(length(x)!=length(keepi)){
+		print('Mismatch between model and parameter length.');traceback();browser();
+	}
+	# Here we convert the unique-values-only parameter vector into standard form
+	out<-rep.int(NA,8); out[keepi]<-x; 
+	if(sum(cni)>0){out[5:8][cni]<-out[1:4][cni];}
+	# We insure that any parameters used by the target model are populated
+	out[keepo][is.na(out[keepo])]<-nil;
+	# Now we apply the target model's constraints
+	if(sum(cno)>0){
+		# If the target constraint is different from the input constraint,
+		# average the two parameters using the function specified by pf
+		# No point in doing this is the constraints are the same
+		if(sum(cni==cno)<4&sum(out[cno]>0)){
+			out[cno]<-apply(out*as.matrix(diag(cno)[c(1:4,1:4),cno]),2,
+				       function(x,f){f(na.omit(x[x!=0]));},pf);
+		}
+		if(trim){out[5:8][cno]<-NA;}
+	}
+	# Gotta remember to trash the unused parameters for the target model.
+	out[-keepo]<-NA;
+	if(trim){out<-as.numeric(na.omit(out));} 
+	return(out);
+}
+
+`compsurvs`<-
+function(a,b){
+	out1<-cbind(c(a$maximum,a$titer),c(b$maximum,b$titer));
+	rownames(out1)<-c('maximum','titer');
+	out2<-rbind(a$estimate,b$estimate);
+	print(out1,digits=22);print(out2);
+	invisible(list(out1,out2));
+}
+
+
+`empdist` <-
+function(x,y,label,nil=2e-7,pf=mean,rounds=5000,type='p'){
+	d<-int2tab(x,y); lx<-length(x); ly<-length(y); lxy<-lx+ly;
+	labels<-list(main=paste(label,'.main.txt',sep=''),
+		     unc=paste(label,'.unc.txt',sep=''),
+		     gml=paste(label,'.gml.txt',sep=''));
+	if(type=='p'){
+		m<-matrix(nrow=lxy,ncol=rounds);
+		for(i in 1:rounds){m[,i]<-sample(d[,2],lxy);}
+		m<-cbind(d[,2],m);
+		write.table(m,paste(label,'_perms.txt',sep=''),col.names=F,row.names=F,sep='\t');
+		cat('\nCommencing permutations.\n');
+		for(i in 1:(rounds+1)){
+			findpars(d[m[,i]==0,1],d[m[,i]==1,1],nil=nil,pf=pf,labels=labels,id=i);
+		}
+	}
+	if(type=='b'){
+		rsx<-matrix(nrow=lx,ncol=rounds);
+		rsy<-matrix(nrow=ly,ncol=rounds);
+		for(i in 1:rounds){
+			rsx[,i]<-sample(x,lx,replace=T);
+			rsy[,i]<-sample(y,ly,replace=T);
+		}
+		rsx<-cbind(x,rsx);rsy<-cbind(y,rsy);
+		write.table(rsx,paste(label,'_xboot.txt',sep=''),col.names=F,row.names=F,sep='\t');
+		write.table(rsy,paste(label,'_yboot.txt',sep=''),col.names=F,row.names=F,sep='\t');
+		cat('\nCommencing bootstrap.\n');
+		for(i in 1:(rounds+1)){
+			findpars(rsx[,i],rsy[,i],nil=nil,pf=pf,labels=labels,id=i);
+		}
+	}
+}
+
+
+`permsurv.old` <-
 function(x,y,label,perms=5000,pars=NULL){
 	d<-int2tab(x,y); lxy<-dim(d)[1]; pr<-matrix(nrow=lxy,ncol=perms);
 	for(i in 1:perms){pr[,i]<-sample(d[,2],lxy);}
@@ -175,7 +455,7 @@ function(x,y,label,perms=5000,pars=NULL){
 	# need to write some kind of validation function for fits
 	if(is.null(pars)|length(pars)!=4){
 		if(exists(parslabel)){cat('\nFound',parslabel,'\n');pars<-get(parslabel);}
-		else{pars<-startpars(x,y,label,perms=10);}
+		else{pars<-startpars.old(x,y,label,perms=10);}
 	}
 	cat('\nCommencing permutations.\n');
 	for(i in 1:(perms+1)){
@@ -200,7 +480,7 @@ function(x,y,label,perms=5000,pars=NULL){
 }
 
 
-`hazwrapper` <-
+`hazwrapper.old` <-
 function(data,foo,outlog='hazlog.R',debuglog='hazdebug.R',debugvars=c('estimate','maximum','titers','runtime'),...){
 	ts<-as.numeric(Sys.time()); data[,1]<-data[,1][foo]; 
 	outname<-paste('out',ts,sep='.');
@@ -213,6 +493,86 @@ function(data,foo,outlog='hazlog.R',debuglog='hazdebug.R',debugvars=c('estimate'
 
 `gmean`<-
 function(x){exp(sum(log(x))/length(x));}
+
+`dropn`<-
+function(x,n,which='smallest'){
+	if(match('largest',which,nomatch=0)){
+		for(i in 1:n){
+			x<-x[-which.max(x)];
+		}
+	}
+	if(match('largest',which,nomatch=0)){
+		for(i in 1:n){
+			x<-x[-which.min(x)];
+		}
+	}
+}
+
+`spyhaz`<-
+function(label,path='./',extramain=0){
+	main<-paste(label,'main',sep='.');
+	gml<-paste(label,'gml',sep='.');
+	unc<-paste(label,'unc',sep='.');
+	gmlcols<-maincols<-c("max", "iters", "rt", "a1", "b1", "c1", "s1", "a2", "b2", "c2",
+			      "s2", "id", "fit", "nilval");
+	unccols<-c('max1','max2','id','fit','nilval');
+	length(maincols)<-length(maincols)+extramain;
+	assign(main,read.table(paste(path,main,'.txt',sep=''),col.names=maincols),envir=.GlobalEnv);
+	assign(gml,read.table(paste(path,gml,'.txt',sep=''),col.names=gmlcols),envir=.GlobalEnv);
+	assign(unc,read.table(paste(path,unc,'.txt',sep=''),col.names=unccols),envir=.GlobalEnv);
+	cat('Output collected from',max(get(gml)$id),'iterations.\n');
+}
+
+`plot.mainhaz`<-
+function(perm,breaks=100,add=F,col=1,abcol='red',onescreen=T,what='cons'){
+	if(what=='cons'){
+		if(onescreen){layout(matrix(1:12,4,3,byrow=T));}
+		plotlr(perm,'g','ga',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'g','gb',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'gm','gma',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'gm','gmb',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'gm','gmc',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'l','la',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'l','lb',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'l','ls',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','lma',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','lmb',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','lmc',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','lms',breaks=breaks,col=col,abcol=abcol,add=add);
+	}
+	if(what=='model'){
+		if(onescreen){layout(matrix(1:6,3,2,byrow=T));}
+		plotlr(perm,'g','e',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'gm','g',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'l','g',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','gm',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','l',breaks=breaks,col=col,abcol=abcol,add=add);
+		plotlr(perm,'lm','g',breaks=breaks,col=col,abcol=abcol,add=add,df=2);
+	}
+	if(onescreen){layout(matrix(1,1,1));}
+}
+
+`plotlr`<-
+function(perm,fit1='gm',fit2='g',breaks=100,df=1,col=1,abcol='red',add=F){
+	lrs<-2*(subset(perm,fit==fit1)$max-subset(perm,fit==fit2)$max);
+	badlrs<-lrs<0; sumbad<-sum(badlrs);
+	cat(fit1,'vs',fit2,'fraction <0:',sumbad/length(lrs),'\n');
+	print(summary(lrs[badlrs]));
+	if(sumbad<10){cat(lrs[badlrs],'\n');} else {cat(lrs[badlrs][1:10],'...\n');}
+	empp<-1-ecdf(lrs)(lrs[1]);
+	chip<-pchisq(lrs[1],df,lower=F);
+	hist(lrs,breaks=breaks,border=col,main=paste(fit1,'vs',fit2),sub='',add=add,
+	     xlab=paste('Emp. p:',format(empp,digits=3),'  Chi-sq p:',format(chip,digits=3)));
+	abline(v=lrs[1],col=abcol);
+}
+
+
+`plotest`<-
+function(perm,val='gm',par='a1',breaks=100,add=F,col=1){
+	ests<-subset(perm,fit==val)[[par]];
+	hist(ests,breaks=breaks,add=add,main=paste(par,'parameter for the',val,'fit'),border=col);
+	abline(v=ests[1],col='red');
+}
 
 `parnames`<-
 function(i,j){
@@ -250,7 +610,7 @@ function(i,j){
 	list(model=model,constraint=constraint,parameters=parameters);
 }
 
-`spyhaz`<-
+`spyhaz.old`<-
 function(label,show=c('models','lm','l','gm','g','pars')){
 	fit<-input<-list(lm=list(u=list(),a=list(),b=list(),c=list(),s=list()), 
 			 l=list(u=list(),a=list(),b=list(),s=list()),
@@ -311,10 +671,10 @@ function(x,type=c('plot','table'),...){
 					ijxlab<-paste('parameter',param);
 					ijsub<-paste('p =',ijp);
 					hist(x[[i]][[j]],breaks=100,xlab=ijxlab,ylab='',
-					     freq=F,main=model,sub=ijsub,...);
+					     freq=T,main=model,sub=ijsub,...);
 					abline(v=x[[i]][[j]][1],col='red');
 					abline(v=attr(x[[i]][[j]],'ci')[1],col='green',lty=2);
-					hist(attr(x[[i]][[j]],'ci'),breaks=100,freq=F,border='pink',
+					hist(attr(x[[i]][[j]],'ci'),breaks=100,freq=T,border='red',
 					     lty=2,add=T);
 				}
 			}
@@ -411,10 +771,10 @@ function(x,type=c('plot','table'),...){
 			iecdf<-ecdf(x[[i]]);
 			ip<-1-iecdf(x[[i]][1]);
 			isub<-paste('p =', ip);
-			hist(x[[i]],breaks=100,xlab='',ylab='',main=model,freq=F,sub=isub,...)
+			hist(x[[i]],breaks=100,xlab='',ylab='',main=model,freq=T,sub=isub,...)
 			abline(v=x[[i]][1],col='red');
 			abline(v=attr(x[[i]],'ci')[1],col='green',lty=2);
-			hist(attr(x[[i]],'ci'),breaks=100,freq=F,border='pink',lty=2,add=T);
+			hist(attr(x[[i]],'ci'),breaks=100,freq=T,border='red',lty=2,add=T);
 		}
 		layout(matrix(1,1,1));
 	}

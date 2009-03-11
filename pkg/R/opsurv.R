@@ -24,7 +24,9 @@ paste(par,collapse=' '),
 "\nPlease specify a different set of parameters or just omit them 
 and use the defaults.");}
 	lb<-fixpar(lb,np,keep);ub<-fixpar(ub,np,keep); rm.temp$lb<<-lb;rm.temp$ub<<-ub;
-	fn<-function(par){objf2(par,lb=lb,ub=ub,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],ex=ex);}
+	fn<-function(par){
+		objf2(par,lb=lb,ub=ub,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],ex=ex);
+	}
 	gr<-function(par){grf2(par,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],model=model);}
 	if(!usegr) gr<-NULL; if(!usehs) hs<-NULL;
 	change<-1; out<-list(par); totaliter<-0;
@@ -67,20 +69,31 @@ and use the defaults.");}
 }
 
 `opsurv` <-
-function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-10,0.1),cons=1,usegr=T,usehs=F,debug=F,
-		lb=c(1e-20,1e-11,-4.940656e-324,-4.940656e-324),ub=c(.5,1,.5,3),called=NULL,cx=NULL,cy=NULL,
-		mvers='',method='nm',debugcomment=NULL,...){
+function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=T,usehs=F,debug=F,
+	 lb=c(1e-14,0,0,0),ub=c(1e-2,.2,1e-6,2),called=NULL,cx=NULL,cy=NULL,
+	 mvers='',method="Nelder-Mead",minout= -Inf,...){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	if(!exists("rm.debug")){rm.debug<<-list(0);} 
+	call<-sys.call();
+	switch(model,
+		g={np<-2;ex<-paste("ofg",mvers,sep='');hs<-hsg;keep<-c(1,2,5,6);},
+		gm={np<-3;ex<-paste("ofgm",mvers,sep='');hs<-hsgm;keep<-c(1:3,5:7);},
+		l={np<-3;ex<-paste("ofl",mvers,sep='');hs<-hsl;keep<-c(1,2,4,5,6,8);},
+		lm={np<-4;ex<-paste("oflm",mvers,sep='');hs<-hslm;keep<-1:8;},
+		stop("The model you specified, ",model,", does not exist.
+The only models supported in this version are: 
+g, gm, l, and lm.")
+		);
 	if(mean(cons)==1 & !is.null(y)){
 		out<-list();
 		options('warn'= -1);
 		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,
-			     lb=lb,ub=ub,called=called,cx=cx,cy=cy,mvers=mvers,method=method,
-			     debugcomment=debugcomment);
-		out1<-opsurv(y,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,
-			     lb=lb,ub=ub,called=called,cx=cx,cy=cy,mvers=mvers,method=method,
-			     debugcomment=debugcomment);
+			     lb=lb,ub=ub,called=called,cx=cx,cy=cy,mvers=mvers,method=method);
+			     if(length(par)==2*np){par1<-par[(np+1):(2*np)];
+			     } else {if(length(par)==8){par1<-par[5:8];
+			     } else par1<-par;}
+		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,
+			     lb=lb,ub=ub,called=called,cx=cx,cy=cy,mvers=mvers,method=method);
 		options('warn'=0);
 		out$estimate<-c(out0$estimate,out1$estimate);
 		out$maximum<-sum(out0$maximum,out1$maximum);
@@ -92,16 +105,6 @@ function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-10,0.1),cons=1,usegr=T,usehs=F,
 		out$runtime <- proc.time()[3] - tstart;
 		out$group0<-out0; out$group1<-out1;
 	} else {
-		call<-sys.call();
-		switch(model,
-			g={np<-2;ex<-paste("ofg",mvers,sep='');hs<-hsg;keep<-c(1,2,5,6);},
-			gm={np<-3;ex<-paste("ofgm",mvers,sep='');hs<-hsgm;keep<-c(1:3,5:7);},
-			l={np<-3;ex<-paste("ofl",mvers,sep='');hs<-hsl;keep<-c(1,2,4,5,6,8);},
-			lm={np<-4;ex<-paste("oflm",mvers,sep='');hs<-hslm;keep<-1:8;},
-			stop("The model you specified, ",model,", does not exist.
-The only models supported in this version are: 
-g, gm, l, and lm.")
-		);
 		rm.temp<<-list(cons=checkcons(cons,np,keep),cons2=rep(cons,le=4),x=x,y=y,
 				keep=keep[1:np],debug=debug,called=called,np=np);
 		par<-fixpar(par,np,keep);
@@ -114,7 +117,10 @@ and use the defaults.");}
 		lb<-fixpar(lb,np,keep);ub<-fixpar(ub,np,keep); rm.temp$lb<<-lb;rm.temp$ub<<-ub;
 		nx<-length(x);ny<-length(y);if(is.null(cx)){cx<-rep(1,nx);}
 		if(is.null(cy)){if(is.null(y)){cy<-1;} else {cy<-rep(1,ny);}}
-		fn<-function(par){objf(par,lb=lb,ub=ub,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],ex=ex,nx=nx,ny=ny,cx=cx,cy=cy);}
+		fn<-function(par){
+			objf(par,lb=lb,ub=ub,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],
+			     minout=minout,ex=ex,nx=nx,ny=ny,cx=cx,cy=cy);
+		}
 		gr<-function(par){grf(par,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],model=paste("g",model,mvers,sep=''),nx=nx,ny=ny,cx=cx,cy=cy);}
 		if(!usegr) gr<-NULL; if(!usehs) hs<-NULL;
 		change<-1; out<-list(par); totaliter<-0;
@@ -125,7 +131,7 @@ and use the defaults.");}
 			out.old<-out;
 			cat(".");
 			options(show.error.messages=F);
-			out<-try(.Internal(optim(out.old[[1]],fn,gr,"Nelder-Mead",ctrl,lb,ub)))
+			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)))
 			options(show.error.messages=T);
 			if(class(out)[1]!="try-error"){
 				totaliter<-out[[3]][1]+totaliter;
@@ -137,13 +143,20 @@ and use the defaults.");}
 				p<-p/2; lbp<-p>lb;
 				p<-p*lbp+1.1*lb*(1-lbp);
 				if(max(p>1.1*lb)==0){cat('X\n');print(p);break();}
+				if(is.null(y)){maxy<-NULL;} else {maxy<-max(y);}
 				lk<-objf(p,lb=lb,ub=ub,cons=rep(cons,le=4),
-					x=max(x),y=max(y),np=np,keep=keep[1:np],ex=ex,nx=nx,ny=ny,cx=cx,cy=cy);
+					x=max(x),y=maxy,np=np,keep=keep[1:np],ex=ex,nx=nx,ny=ny,cx=cx,cy=cy);
 				# Damn starting params! You have bested me, I surrender.
 				cat('!');
 				}
 				if(!is.na(lk)){out<-list(p);change<-1;} else {break;}
 			} 
+# 			while(max(out$estimate<lb)!=0|max(out$estimate>=ub)!=0){
+# 				out$estimate[out$estimate<lb]<-
+# 					(2*lb-out$estimate)[out$estimate<lb];
+# 				out$estimate[out$estimate>ub]<-
+# 					(2*ub-out$estimate)[out$estimate>ub];
+# 			}
 		}
 		cat(model," ");
 		if(class(out)[1]!="try-error"){
@@ -157,4 +170,3 @@ and use the defaults.");}
 	}
 	out;
 }
-
