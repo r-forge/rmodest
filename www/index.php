@@ -50,8 +50,14 @@ echo $contents; } ?>
 <li><a href='http://cran.r-project.org/bin/windows/base/release.htm'>Download and install R.</a></li>
 <li>Run R</li>
 <li>In the console window, type:<br>
+<pre>install.packages("Survomatic",,c("http://www.rforge.net/","http://cran.r-project.org/")).</pre><br>
+This installs the Survomatic add-on, and you only need to do this once.</li>
+<li>In the console window, type:<br>
+<pre>library(Survomatic)</pre><br>
+This loads Survomatic, and you need to do this anytime you need to run it.</li>
+<li>In the console window, type:<br>
 <pre>go()</pre><br>
-That's pretty much all the actual R you'll need. From that point on, Survomatic will prompt you for your survival data and analyze it for you, using several methods.
+That last command actually starts Survomatic and is pretty much all the actual R you'll need. From that point on, Survomatic will prompt you for your survival data and analyze it for you, using several methods.
 </li>
 </ol>
 
