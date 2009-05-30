@@ -77,7 +77,8 @@ go(x, y, xynames = c(), save = T, path, prompt = 2, xlim = 1350, slwd = 4, scol 
 
 \references{ 
 Pletcher, S. D. et al., (2000) Why Do Lifespans Differ? Partitioning Mean Longevity Differences in Terms of Age-Specific Mortality Parameters, _Journal of Gerontology: Biological Sciences_, *55A*, B381-B389
-\nWang, C. et al., (2004) Statistical Methods for Testing Effects on "Maximum Lifespan",_Mechanisms of Ageing and Development_, *125*, 629-632
+
+Wang, C. et al., (2004) Statistical Methods for Testing Effects on "Maximum Lifespan",_Mechanisms of Ageing and Development_, *125*, 629-632
 }
 \author{ Alex F. Bokov }
 \note{Some older version of MacOS X do not load tcltk properly, and therefore will have problems running this package. Please make sure you are using the latest revision of Survomatic.}
