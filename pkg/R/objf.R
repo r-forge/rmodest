@@ -11,7 +11,8 @@ function(par,lb=0,ub=1,cons=rep.int(1,4),x,y=NULL,keep=1:2,np=2,ex=exg){
 }
 
 `objf` <-
-function(par,lb=0,ub=10,cons=rep.int(1,4),x,y=NULL,keep=1:2,np=2,ex="ofg",nx,ny,cx,cy,minout= -Inf){
+function(par,lb=0,ub=10,cons=rep.int(1,4),x,y=NULL,keep=1:2,np=2,ex="ofg",nx,ny,cx,cy,minout= -Inf,tlog=F){
+	if(tlog){par<-exp(par);}
 	if(max(par<lb)!=0|max(par>=ub)!=0){return(NA);}
 # 	while(max(par<lb)!=0|max(par>=ub)!=0){
 # 	 	par[par<lb]<-(2*lb-par)[par<lb]; par[par>ub]<-(2*ub-par)[par>ub];

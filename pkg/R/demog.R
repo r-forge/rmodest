@@ -4,7 +4,6 @@ function(t,int=1){
 	t<-sort(t); t.rle<-rle(t); d<-px<-lx<-c();
 	ts<-1:max(t.rle$values);
 	for(i in ts){
-		
 		j<-match(i,t.rle$values);
 		if(is.na(j)){d<-c(d,0);}else{d<-c(d,t.rle$lengths[j]);}
 	}
@@ -13,8 +12,7 @@ function(t,int=1){
 	}
 	for(i in ts) {px<-c(px,lx[i+1]/lx[i]);}
 	ux<- -log(px); ux[is.infinite(ux)]<-NA; lnux<-log(ux); lnux[is.infinite(lnux)]<-NA;
-	out<-cbind(ts,d,lx,px,ux,lnux);
-	colnames(out)<-c("time","deaths","lx","px","ux","lnux");
-	data.frame(out);
+	out<-data.frame(time=ts,deaths=d,lx=lx,px=px,ux=ux,lnux=lnux);
+	return(out);
 }
 

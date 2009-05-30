@@ -1,6 +1,7 @@
 `go` <-
-function(x,y,xynames=c(),units="d",save=T,path,prompt=2,xlim=1350,slwd=4,
-scol=c('darkred',1),spch=24:25,spcex=0,splwd=slwd,spbg=scol,sleg=T,sxcex=1.5,sxlwd=3,qstart=1,demint=30, qrse='boot'){
+function(x,y,xynames=c(),save=T,path,prompt=2,xlim=1350,slwd=4,
+scol=c('darkred',1),spch=24:25,spcex=0,splwd=slwd,spbg=scol,sleg=T,sxcex=1.5,sxlwd=3,qstart=1,demint=1, qrse='boot',dohz=1){
+	library(tcltk);
 	options(warn=-1);options(show.error.messages=T);
 	quantiles<-list(seq(.01,.99,.01),seq(.05,.95,.05),seq(.1,.9,.1),seq(.2,1,.2));
 	mycall<-strsplit(as.character(sys.call()[1]),"\\$")[[1]];
@@ -12,13 +13,12 @@ scol=c('darkred',1),spch=24:25,spcex=0,splwd=slwd,spbg=scol,sleg=T,sxcex=1.5,sxl
 		}}
 		x<-d$x;y<-d$y;xynames<-d$xynames;smry<-d$smry;zsc<-d$zsc;xy<-d$xy;
 		group<-d$group;lr<-d$lr;qreg<-d$qreg;qreg.sum<-d$qreg.sum;tt<-d$tt;
-		qreg.tab<-d$qreg.tab;xmod<-d$xmod;ymod<-d$ymod;xymod<-d$xymod;demint<-d$demint;
-		xd<-d$xd;yd<-d$yd;xhzpars<-d$xhzpars;yhzpars<-d$yhzpars;xymod.tab<-d$xymod.tab;
-		modx<-d$modx;mody<-d$mody;modxy<-d$modxy;xysurvfit<-d$xysurvfit;
+		qreg.tab<-d$qreg.tab;mod<-d$mod;demint<-d$demint;
+		xd<-d$xd;yd<-d$yd;xysurvfit<-d$xysurvfit;
 		sig.tests<-d$sig.tests;tests<-d$tests; report<-d$report; path<-d$path;
 		sigqreg<-d$sigqreg;sigzsc<-d$sigzsc;slwd<-d$slwd;
 		scol<-d$scol;spch<-d$spch;spcex<-d$spcex;splwd<-d$splwd;spbg<-d$spbg;
-		sleg<-d$sleg;sxcex<-d$sxcex;sxlwd<-d$sxlwd;
+		sleg<-d$sleg;sxcex<-d$sxcex;sxlwd<-d$sxlwd; dohz<-d$dohz;
 	}else{top=T;}
 	if(missing(path)){
 		if(top&save){
@@ -61,8 +61,8 @@ so you won\'t have to paste them in next time. Instead you can type
 	}
 
 	if(top){
-		tests<-c("t test"="tt","z score"="zsc","log rank"="lr","quantile regression"="qreg.tab",
-			"mortality parameters"="xymod.tab");
+		tests<-c("t test"="tt","z score"="zsc","log rank"="lr","quantile regression"="qreg.tab");
+		if(dohz){tests<-c(tests,"mortality parameters"="mod");}
 		sig.tests<-c();
 	}
 
@@ -111,78 +111,40 @@ so you won\'t have to paste them in next time. Instead you can type
 	cat('\n'); print(qreg.tab);
 
 	cat("\nFinding the best mortality models..."); 
-	if(top){xmod<-ymod<-xymod<-list();
-		xd<-demog(x,demint); yd<-demog(y,demint);
-		#xd1<-demog(x); xd7<-demog(x,7); xd30<-demog(x,30);
-		#yd1<-demog(y); yd7<-demog(y,7); yd30<-demog(y,30);
-		xmod$g<-opsurv('g',x,par=rep(5e-7,4)); ymod$g<-opsurv('g',y,par=rep(5e-7,4));
-		xmod$gm<-opsurv('gm',x,par=rep(5e-7,4)); ymod$gm<-opsurv('gm',y,par=rep(5e-7,4));
-		xmod$l<-opsurv('l',x,par=rep(5e-7,4)); ymod$l<-opsurv('l',y,par=rep(5e-7,4));
-		xmod$lm<-opsurv('lm',x,par=rep(5e-7,4)); ymod$lm<-opsurv('lm',y,par=rep(5e-7,4));
-		likxu<-likyu<-dlikxu<-dlikyu<-c();
-		for(i in 1:4){
-			if(class(xmod[[i]])[1]=="try-error"){likxu[i]<- -Inf;}
-			else{likxu[i]<-xmod[[i]]$maximum;}
-			if(class(ymod[[i]])[1]=="try-error"){likyu[i]<- -Inf;}
-			else{likyu[i]<-ymod[[i]]$maximum;}
-		}
-		for(i in 2:4){
-			dlikxu[i-1]<- -2*(likxu[1]-likxu[i]);
-			dlikyu[i-1]<- -2*(likyu[1]-likyu[i]);
-		}
-		dlikxu<-pchisq(dlikxu,c(1,1,2),lower=F);
-		dlikyu<-pchisq(dlikyu,c(1,1,2),lower=F);
-		if(min(dlikxu)<=.05){modx<-max(which(dlikxu<=.05))+1;} else {modx<-1;}
-		if(min(dlikyu)<=.05){mody<-max(which(dlikyu<=.05))+1;} else {mody<-1;}
-		modxy<-min(modx,mody);
-	}
-	cat("\nThe best model for",xynames[1],"is",names(xmod)[modx],".");
-	cat("\nThe best model for",xynames[2],"is",names(ymod)[mody],".");
-	cat("\nChecking for shared mortality parameters between groups...");
+	if(top & dohz){xd<-demog(x,demint); yd<-demog(y,demint);mod<-findpars(x,y);}
 	if(top){
-		idxcons<-switch(modxy,c(a=1,b=2),c(a=1,b=2,c=3),c(a=1,b=2,s=4),c(a=1,b=2,c=3,s=4));
-		for(i in idxcons){
-			cons<-rep(1,4); cons[i]<-0;
-			xymod[[names(idxcons)[i]]]<-opsurv(names(xmod)[modxy],x,y,rep(5e-7,4),cons);
-		}
-		xymod.tab<-c();
-		for(i in xymod){
-			xymod.tab<-rbind(xymod.tab, c(i$estimate,i$maximum,
-					pchisq(-2*(likxu[modxy]+likyu[modxy]-i$maximum),1,lower=F)));
-		}
-		rownames(xymod.tab)<-names(xymod);
-		colnames(xymod.tab)<-c(rep("",dim(xymod.tab)[2]-2),"Likelihood","p");
-		if(xymod.tab[,5]<=.05) sig.tests<-c(sig.tests,5);
-	}
-	cat('\n');print(xymod.tab); 
-
-	if(top){
-	sigzsc<-zsc[which(zsc$sig=="*"),c(2,4,8)];
-	if(class(qreg.tab)!="character"){
-		sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05&qreg.tab[,3]>0,c(1:2,5)],ncol=3);
+		sigzsc<-zsc[which(zsc$sig=="*"),c(2,4,8)];
+		if(class(qreg.tab)!="character"){
+			sigqreg<-matrix(qreg.tab[qreg.tab[,5]<.05&qreg.tab[,3]>0,c(1:2,5)],ncol=3);
 	} else {sigqreg<-matrix(NA,ncol=3);}
 	if(dim(sigqreg)[1]==0){sigqreg<-matrix(NA,ncol=3);}
 	lz<-dim(sigzsc)[1];lqr<-dim(sigqreg)[1];
-	report<-c(length(x),mean(x),round(quantile(x,c(.5,.9)),0),max(x),lr$stat,NA,xmod$g$estimate,
+	report<-c(n=length(x),mean=mean(x),round(quantile(x,c(.5,.9)),0),max=max(x),`log-rank`=lr$stat,NA,
 		NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(x,sigqreg[,1])},sigzsc[,1]);
-	report<-cbind(report,NA,NA,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,ymod$g$estimate,NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(y,sigqreg[,1])},sigzsc[,2]),NA,NA);
+	report<-cbind(report,NA,NA,c(length(y),mean(y),round(quantile(y,c(.5,.9)),0),max(y),NA,NA,NA,if(match(NA,sigqreg[,1],no=F)){NA}else{quantile(y,sigqreg[,1])},sigzsc[,2]),NA,NA);
 	report[2,2]<-mean(x)-sd(x)/sqrt(length(x)); report[2,3]<-mean(x)+sd(x)/sqrt(length(x));
 	report[2,5]<-mean(y)-sd(y)/sqrt(length(y)); report[2,6]<-mean(y)+sd(y)/sqrt(length(y));
 	report[3:4,2:3]<-qci(x,c(.5,.9)); report[3:4,5:6]<-qci(y,c(.5,.9));
-	if(match(NA,sigqreg[,1],no=F)==0){
-		report[11:(10+dim(sigqreg)[1]),2:3]<-qci(x,sigqreg[,1]);
-		report[11:(10+dim(sigqreg)[1]),5:6]<-qci(y,sigqreg[,1]);
+	if(match(NA,sigqreg[,1],no=F)==0 & dim(report)[1]>10){
+		#browser();
+		# these are terrible hacks, should be fixed
+		inrange<-9:(8+dim(sigqreg)[1]);
+		report[inrange,2:3]<-qci(x,sigqreg[,1])[1:length(inrange),];
+		report[inrange,5:6]<-qci(y,sigqreg[,1])[1:length(inrange),];
 	}
-	rownames(report)[c(1:3,5,6,8,9)]<-c('n','mean','median','max','log-rank','initial mortality','mortality acceleration');
+	rownames(report)[3]<-'median';
 	if(match(NA,sigqreg[,1],no=F)==0){
-		rownames(report)[11:(10+dim(sigqreg)[1])]<-paste("(qr) age, quantile",sigqreg[,1]);
+		#rownames(report)[dim(report)[1]:(10+dim(sigqreg)[1])]<-paste("(qr) age, quantile",sigqreg[,1]);
 	}
-	if(dim(sigzsc)[1]>0){
+	if(dim(sigzsc)[1]>0&dim(report)[1]>11){
 		rownames(report)[(11+dim(sigqreg)[1]):dim(report)[1]]<-paste("(score) # alive,  quantile",rownames(sigzsc));
 	}
 	#colnames(report)[c(1]<-c(xynames[1],'LBx95','UBx95','xynames[2]','LBy95','UBy95');
 	report<-cbind(report,p=
-	   c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],NA,lr$pval,NA,xymod.tab[,5],NA,sigqreg[,3],sigzsc[,3]));
+	   c(NA,tt$p.value,zsc[match(c(.5,.9),rownames(zsc)),8],NA,lr$pval,NA,
+	   NA,
+	   #if(dohz){xymod.tab[,5]} else {NA},
+	   NA,sigqreg[,3],sigzsc[,3]));
 	}
 	bndlbs<-c('LB95','UB95');
 	colnames(report)<-c(xynames[1],paste(xynames[1],bndlbs,sep='.'),
@@ -206,27 +168,27 @@ so you won\'t have to paste them in next time. Instead you can type
 		if(save){graphsave(path,xynames,".qr.eps",prompt);}else{readline("Press enter to continue.")}
 	}
 
-	if(top){
-		xhzpars<-rbind(c(xmod$g$estimate,NA),c(xmod$gm$estimate));
-		yhzpars<-rbind(c(ymod$g$estimate,NA),c(ymod$gm$estimate));}
-	cat("\n\nPlotting hazard curves.\n");
-	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
-	lazyhazplots(list(xd),xhzpars,demint,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
-	lazyhazplots(list(yd),yhzpars,demint,xlim=xlim/30,cols='darkred',add=T);
-	if(save){graphsave(path,xynames[2],".hz.eps",prompt);}else{readline("Press enter to continue.")}
+	#if(top & dohz){
+	#	xhzpars<-rbind(c(mod$g$group0$estimate,NA),c(mod$gm$group0$estimate));
+	#	yhzpars<-rbind(c(mod$g$group1$estimate,NA),c(mod$gm$group1$estimate));}
+# 	cat("\n\nPlotting hazard curves.\n");
+# 	#lazyhazplots(list(xd1,xd7,xd30),xhzpars,c(1,7,30),xlim=xlim);
+# 	browser();
+# 	lazyhazplots(list(xd),xhzpars,demint,xlim=xlim/30,cols='black',main=paste(tmain,"Hazard"));
+# 	lazyhazplots(list(yd),yhzpars,demint,xlim=xlim/30,cols='darkred',add=T);
+# 	if(save){graphsave(path,xynames[2],".hz.eps",prompt);}else{readline("Press enter to continue.")}
 
 	if(top){
 		sig.tests<-tests[sig.tests]; 
 		if(length(sig.tests)==0){sig.tests<-0;names(sig.tests)<-"None";}
+		if(!dohz){xd<-yd<-mod<-c();}
 		out<-list(smry=smry,zsc=zsc,x=x,y=y,xy=xy,xynames=xynames,path=path,
 			group=group,lr=lr,tt=tt,tests=tests,sig.tests=sig.tests,
 			qreg=qreg,qreg.tab=qreg.tab,qreg.sum=qreg.sum,demint=demint,
-			xd=xd,yd=yd,xhzpars=xhzpars,yhzpars=yhzpars,
-			xmod=xmod,ymod=ymod,modx=modx,mody=mody,
-			modxy=modxy,xymod=xymod,report=report,sigqreg=sigqreg,
-			sigzsc=sigzsc,xymod.tab=xymod.tab,xysurvfit=xysurvfit,
+			xd=xd,yd=yd,mod=mod,report=report,sigqreg=sigqreg,
+			sigzsc=sigzsc,xysurvfit=xysurvfit,
 			slwd=slwd,scol=scol,spch=spch,spcex=spcex,splwd=splwd,
-			spbg=spbg,sleg=sleg,sxcex=sxcex,sxlwd=sxlwd)
+			spbg=spbg,sleg=sleg,sxcex=sxcex,sxlwd=sxlwd,dohz=dohz)
 		class(out)<-"survomatic";
 		go<-get(as.character(sys.call()[1]));
 		out$go<-go; out$sys<-function(q){print(group);print(sys.status());print(sys.call());}
@@ -257,10 +219,30 @@ alex.bokov@gmail.com\n');} else {.fn<<-get(x);.fn$go();rm(.fn,pos=parent.frame()
 	cat("\nExecutive Summary:\n");
 	print(report[1:5,],na.print="");
 	cat('\n-----------------------\nLog-rank: p =',report[6,7],'\n');
-	cat('\n-----------------------\nMortality\n');
-	print(report[8:9,],na.print="");
+	#cat('\n-----------------------\nMortality\n');
+	#print(report[8:9,],na.print="");
 	cat('\n-----------------------\nQuantile Regression & Z-score\n');
-	print(report[11:dim(report)[1],],na.print="");
+	print(report[9:dim(report)[1],],na.print="");
+	if(dohz){
+		cat('\n-----------------------\nMortality Models\n');
+		if(!mod[mod$model=='gm','sig?']){
+			mod[mod$model=='gma','sig?']<-mod[mod$model=='gmb','sig?']<-
+			mod[mod$model=='gmc','sig?']<-F;
+		}
+		if(!mod[mod$model=='l','sig?']){
+			mod[mod$model=='la','sig?']<-mod[mod$model=='lb','sig?']<-
+			mod[mod$model=='ls','sig?']<-F;
+		}
+		if(!mod[mod$model=='l','sig?']&!mod[mod$model=='g','sig?']){
+			mod[mod$model=='lma','sig?']<-F;
+		}
+		if(!mod[mod$model=='lm','sig?']){
+			mod[mod$model=='lma','sig?']<-mod[mod$model=='lmb','sig?']<-
+			mod[mod$model=='lmc','sig?']<-mod[mod$model=='lms','sig?']<-F;
+		}
+		print(subset(mod,`sig?`==T,select=c('MLE','a1','b1','c1','s1','a2','b2','c2','s2',
+			'LR','AIC','BIC','p (chi squared)')),na.print="");
+	}
 	cat("\n\nMethods:");
 	cat("\nMeans of log-transformed survival times were compared using the Student\'s 
 t-test. Quantiles, including the median, were compared using a modified 

@@ -37,369 +37,8 @@ function(data,foo,...){
 	out$statistic;
 }
 
-`startpars.old`<-
-function(x,y,label,perms=10){
-	d<-int2tab(x,y); lxy<-dim(d)[1]; pr<-matrix(nrow=lxy,ncol=perms);
-	for(i in 1:perms){pr[,i]<-sample(d[,2],lxy);}
-	fits<-list(lm=list(u=list(cons=c(1L,1L,1L,1L),out=c()), a=list(cons=c(0L,1L,1L,1L),out=c()),
-			   b=list(cons=c(1L,0L,1L,1L),out=c()), c=list(cons=c(1L,1L,0L,1L),out=c()),
-			   s=list(cons=c(1L,1L,1L,0L),out=c())),
-		   l=list(u=list(cons=c(1L,1L,1L,1L),out=c()), a=list(cons=c(0L,1L,1L,1L),out=c()),
-			  b=list(cons=c(1L,0L,1L,1L),out=c()), s=list(cons=c(1L,1L,1L,0L),out=c())),
-		   gm=list(u=list(cons=c(1L,1L,1L,1L),out=c()), a=list(cons=c(0L,1L,1L,1L),out=c()),
-			   b=list(cons=c(1L,0L,1L,1L),out=c()), c=list(cons=c(1L,1L,0L,1L),out=c())),
-		   g=list(u=list(cons=c(1L,1L,1L,1L),out=c()), a=list(cons=c(0L,1L,1L,1L),out=c()),
-			  b=list(cons=c(1L,0L,1L,1L),out=c())));	
 
-	cat('\nCalculating unconstrained fits from default starting parameters.\n');
-	for(i in 1:perms){
-		for(j in 1:length(fits)){
-			jout<-opsurv(d[pr[,i]==0,1],d[pr[,i]==1,1],names(fits)[j]);
-			fits[[j]]$u$out<-rbind(fits[[j]]$u$out,
-					       c(jout$maximum,jout$titer,jout$runtime,jout$estimate));
-		}
-	}
 
-	cat('\nCalculating unconstrained fits from candidate optimal parameters.\n');
-	for(j in 1:length(fits)){
-		#browser();
-		jcols<-4:dim(fits[[j]]$u$out)[2];
-		jin<-fits[[j]]$u$out[-1,jcols];
-		jmaxs<-numeric(4); jpars<-list();
-		jmaxs[1]<-fits[[j]]$u$out[1,1];
-
-		jpars[[1]]<-fits[[j]]$u$out[1,jcols];
-		jpars[[2]]<-apply(jin,2,mean);
-		jpars[[3]]<-apply(jin,2,median);
-		jpars[[4]]<-apply(jin,2,gmean);
-
-		for(l in 2:4){
-			jmaxs[l]<-opsurv(x,y,names(fits)[j],par=jpars[[l]])$maximum;
-		}
-		fits[[j]]$u$label<-paste(label,'_',names(fits)[j],'u',sep='');
-		jmaxmax<-which.max(jmaxs); if(jmaxmax>1){
-			cat('\nBetter pars found for',fits[[j]]$u$label,':',jmaxmax,'\n');
-		}
-		fits[[j]]$u$par<-jpars[[jmaxmax]];
-		#cat('\nmaxima:',jmaxs,'\n');
-		write.table(cbind(jmaxs,t(as.data.frame(jpars))),
-			    file=paste(fits[[j]]$u$label,'_opars.txt',sep=''),
-			    col.names=F,row.names=F,sep='\t');
-	}
-	
-	cat('\nCalculating constrained fits from unconstrained optimal parameters.\n');
-	for(i in 1:perms){
-		for(j in 1:length(fits)){
-			for(k in 2:length(fits[[j]])){
-				jkout<-opsurv(d[pr[,i]==0,1],d[pr[,i]==1,1],
-					      names(fits)[j],
-					      cons=fits[[j]][[k]]$cons,
-					      par=fits[[j]]$u$par);
-				fits[[j]][[k]]$out<-rbind(fits[[j]][[k]]$out,
-							  c(jkout$maximum,jkout$titer,jkout$runtime,	
-							    jkout$estimate));
-			}
-		}
-	}
-
-	cat('\nCalculating constrained from candidate optimal parameters.\n');
-	for(j in 1:length(fits)){
-		for(k in 2:length(fits[[j]])){
-			jkcols<-4:dim(fits[[j]][[k]]$out)[2];
-			jkin<-fits[[j]][[k]]$out[-1,jkcols];
-			jkmaxs<-numeric(4); jkpars<-list();
-			jkmaxs[1]<-fits[[j]][[k]]$out[1,1];
-			jkpars[[1]]<-fits[[j]]$u$out[1,jkcols];
-			jkpars[[2]]<-apply(jkin,2,mean);
-			jkpars[[3]]<-apply(jkin,2,median);
-			jkpars[[4]]<-apply(jkin,2,gmean);
-	
-			for(l in 2:4){
-				jkmaxs[l]<-opsurv(x,y,names(fits)[j],cons=fits[[j]][[k]]$cons,
-				                  par=jkpars[[l]])$maximum;
-			}
-			fits[[j]][[k]]$label<-paste(label,'_',names(fits)[j],names(fits[[j]])[k],sep='');
-			jkmaxmax<-which.max(jkmaxs); if(jkmaxmax>1){
-				cat('\nBetter pars found for',fits[[j]][[k]]$label,':',jkmaxmax,'\n');
-			}
-			fits[[j]][[k]]$par<-jkpars[[jkmaxmax]];
-			write.table(cbind(jkmaxs,t(as.data.frame(jkpars))),
-				    file=paste(fits[[j]][[k]]$label,'_opars.txt', sep=''), 
-				    col.names=F,row.names=F,sep='\t');
-		}
-	}
-	outname<-paste(label,'pars',sep='');
-	assign(outname,fits,envir=.GlobalEnv);
-	save(list=outname,file=paste(outname,'.rdata',sep=''));
-	invisible(fits);
-}
-
-`ressurv.old` <-
-function(x,y,label,resam=1000,pars=NULL,...){
-	lx<-length(x);ly<-length(y);
-	rsx<-matrix(nrow=lx,ncol=resam);
-	rsy<-matrix(nrow=ly,ncol=resam);
-	for(i in 1:resam){
-		rsx[,i]<-sample(x,lx,replace=T);
-		rsy[,i]<-sample(y,ly,replace=T);
-	}
-	rsx<-cbind(x,rsx); rsy<-cbind(y,rsy);
-	if(is.character(pars)){parslabel<-pars;pars<-NULL;}
-	else{parslabel<-paste(label,'pars',sep='');}
-	# need to write some kind of validation function for fits
-	if(is.null(pars)|length(pars)!=4){
-		if(exists(parslabel)){pars<-get(parslabel);}
-		else{pars<-startpars.old(x,y,label,perms=10);}
-	}
-	for(i in 1:(resam+1)){
-		for(j in names(pars)){
-			for(k in names(pars[[j]])){
-				out<-opsurv(rsx[,i],rsy[,i],model=j,cons=pars[[j]][[k]]$cons,
-					    par=pars[[j]][[k]]$par);
-				outtab<-c(out$maximum,out$titer,out$runtime,out$estimate,
-					  out$group0$estimate,out$group1$estimate);
-				write.table(t(outtab),paste(label,'_resam_',j,k,'.txt',sep=''),sep='\t',
-					    append=T,col.names=F,row.names=F);
-			}
-		}
-	}
-}
-
-`findpars`<-
-function(x,y,nil=1e-7,bnil=0.005,pf=mean,labels=NULL,summary=F,id=0){
-	lx<-length(x);ly<-length(y);sumx<-sum(x);sumy<-sum(y);
-	xemax<-lx*log(lx/sumx)-lx;yemax<-ly*log(ly/sumy)-ly;
-	es.e<-list(maximum=xemax+yemax,
-		   estimate=c(lx/sumx,ly/sumy),group0=list(maximum=xemax),
-		   group1=list(maximum=yemax),titer=0,runtime=0);
-	partemp<-modpars(es.e$estimate,'e','g',nil=nil,trim=T);
-	partemp[c(2,4)]<-bnil;
-	es.g<-opsurv(x,y,'g',par=partemp,minout=es.e$maximum);
-	es.ga<-opsurv(x,y,'g',cons=c(F,T,T,T),
-		      par=modpars(es.g$estimate,'g',cno=c(F,T,T,T),pf=pf,trim=T));
-	if(es.ga$maximum>es.g$maximum){
-		es.g<-opsurv(x,y,'g',
-			     par=modpars(es.ga$estimate,'g',cni=c(F,T,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.gb<-opsurv(x,y,'g',cons=c(T,F,T,T),
-		      par=modpars(es.g$estimate,'g',cno=c(T,F,T,T),pf=pf,trim=T));
-	if(es.gb$maximum>es.g$maximum){
-		es.g<-opsurv(x,y,'g',
-			     par=modpars(es.gb$estimate,'g',cni=c(T,F,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	partemp<-modpars(es.g$estimate,'g','gm',nil=nil,trim=T);
-	es.gm<-opsurv(x,y,'gm',par=partemp);
-	es.gma<-opsurv(x,y,'gm',cons=c(F,T,T,T),
-		       par=modpars(es.gm$estimate,'gm',cno=c(F,T,T,T),pf=pf,trim=T));
-	if(es.gma$maximum>es.gm$maximum){
-		es.gm<-opsurv(x,y,'gm',
-			     par=modpars(es.gma$estimate,'gm',cni=c(F,T,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.gmb<-opsurv(x,y,'gm',cons=c(T,F,T,T),
-		       par=modpars(es.gm$estimate,'gm',cno=c(T,F,T,T),pf=pf,trim=T));
-	if(es.gmb$maximum>es.gm$maximum){
-		es.gm<-opsurv(x,y,'gm',
-			     par=modpars(es.gmb$estimate,'gm',cni=c(T,F,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.gmc<-opsurv(x,y,'gm',cons=c(T,T,F,T),
-		       par=modpars(es.gm$estimate,'gm',cno=c(T,T,F,T),pf=pf,trim=T));
-	if(es.gmc$maximum>es.gm$maximum){
-		es.gm<-opsurv(x,y,'gm',
-			     par=modpars(es.gmc$estimate,'gm',cni=c(T,T,F,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.l<-opsurv(x,y,'l',par=partemp);
-	es.la<-opsurv(x,y,'l',cons=c(F,T,T,T),
-		      par=modpars(es.l$estimate,'l',cno=c(F,T,T,T),pf=pf,trim=T));
-	if(es.la$maximum>es.l$maximum){
-		es.l<-opsurv(x,y,'l',
-			     par=modpars(es.la$estimate,'l',cni=c(F,T,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.lb<-opsurv(x,y,'l',cons=c(T,F,T,T),
-		      par=modpars(es.l$estimate,'l',cno=c(T,F,T,T),pf=pf,trim=T));
-	if(es.lb$maximum>es.l$maximum){
-		es.l<-opsurv(x,y,'l',
-			     par=modpars(es.lb$estimate,'l',cni=c(T,F,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.ls<-opsurv(x,y,'l',cons=c(T,T,T,F),
-		      par=modpars(es.l$estimate,'l',cno=c(T,T,T,F),pf=pf,trim=T));
-	if(es.ls$maximum>es.l$maximum){
-		es.l<-opsurv(x,y,'l',
-			     par=modpars(es.ls$estimate,'l',cni=c(T,T,T,F),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.gmlm<-opsurv(x,y,'lm',
-		      par=modpars(es.gm$estimate,'gm','lm',nil=nil,trim=T));
-	es.llm<-opsurv(x,y,'lm',
-		      par=modpars(es.l$estimate,'l','lm',nil=nil,trim=T));
-	# Might wish to consider getting rid of es.gmlm and have the gm output go straight to es.lm
-	if(es.gmlm$maximum<es.llm$maximum){es.lm<-es.llm;} else {es.lm<-es.gmlm;}
-	es.lma<-opsurv(x,y,'lm',cons=c(F,T,T,T),minout=es.lm$maximum,
-		       par=modpars(es.lm$estimate,'lm',cno=c(F,T,T,T),pf=pf,trim=T));
-	if(es.lma$maximum>es.lm$maximum){
-		es.lm<-opsurv(x,y,'lm',
-			     par=modpars(es.lma$estimate,'lm',cni=c(F,T,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.lmb<-opsurv(x,y,'lm',cons=c(T,F,T,T),minout=es.lm$maximum,
-		       par=modpars(es.lm$estimate,'lm',cno=c(T,F,T,T),pf=pf,trim=T));
-	if(es.lmb$maximum>es.lm$maximum){
-		es.lm<-opsurv(x,y,'lm',
-			     par=modpars(es.lmb$estimate,'lm',cni=c(T,F,T,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),minout=es.lm$maximum,
-		       par=modpars(es.lm$estimate,'lm',cno=c(T,T,F,T),pf=pf,trim=T));
-	if(es.lmc$maximum>es.lm$maximum){
-		es.lm<-opsurv(x,y,'lm',
-			     par=modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),minout=es.lm$maximum,
-		       par=modpars(es.lm$estimate,'lm',cno=c(T,T,T,F),pf=pf,trim=T));
-	if(es.lms$maximum>es.lm$maximum){
-		es.lm<-opsurv(x,y,'lm',
-			     par=modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),
-					 cno=c(T,T,T,T),pf=pf,trim=T));}
-	if(!is.null(labels)){
-		write.table(t(c(es.e$max,NA,NA,modpars(es.e$estimate,'e',nil=nil,trim=F),id,'e',nil,NA)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.g$max,es.g$titer,es.g$runtime,
-				modpars(es.g$estimate,'g',nil=nil,trim=F),id,'g',nil,es.g$max-es.e$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.ga$max,es.ga$titer,es.ga$runtime,
-				modpars(es.ga$estimate,'g',cni=c(F,T,T,T),nil=nil,trim=F),id,'ga',nil,
-			        es.g$max-es.ga$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gb$max,es.gb$titer,es.gb$runtime,
-				modpars(es.gb$estimate,'g',cni=c(T,F,T,T),nil=nil,trim=F),id,'gb',nil,
-			        es.g$max-es.gb$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gm$max,es.gm$titer,es.gm$runtime,
-				modpars(es.gm$estimate,'gm',nil=nil,trim=F),id,'gm',nil,
-			        es.gm$max-es.g$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gma$max,es.gma$titer,es.gma$runtime,
-				modpars(es.gma$estimate,'gm',cni=c(F,T,T,T),nil=nil,trim=F),
-				id,'gma',nil,es.gm$max-es.gma$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gmb$max,es.gmb$titer,es.gmb$runtime,
-				modpars(es.gmb$estimate,'gm',cni=c(T,F,T,T),nil=nil,trim=F),
-				id,'gmb',nil,es.gm$max-es.gmb$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gmc$max,es.gmc$titer,es.gmc$runtime,
-				modpars(es.gmc$estimate,'gm',cni=c(T,T,F,T),nil=nil,trim=F),
-				id,'gmc',nil,es.gm$max-es.gmc$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.l$max,es.l$titer,es.l$runtime,
-				modpars(es.l$estimate,'l',nil=nil,trim=F),id,'l',nil,es.l$max-es.g$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.la$max,es.la$titer,es.la$runtime,
-				modpars(es.la$estimate,'l',cni=c(F,T,T,T),nil=nil,trim=F),id,'la',nil,
-			        es.l$max-es.la$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lb$max,es.lb$titer,es.lb$runtime,
-				modpars(es.lb$estimate,'l',cni=c(T,F,T,T),nil=nil,trim=F),id,'lb',nil,
-			        es.l$max-es.lb$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.ls$max,es.ls$titer,es.ls$runtime,
-				modpars(es.ls$estimate,'l',cni=c(T,T,T,F),nil=nil,trim=F),id,'ls',nil,
-			        es.l$max-es.ls$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lm$max,es.lm$titer,es.lm$runtime,
-				modpars(es.lm$estimate,'lm',nil=nil,trim=F),id,'lm',nil,
-			        es.lm$max-max(es.l$max,es.gm$max))),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lma$max,es.lma$titer,es.lma$runtime,
-				modpars(es.lma$estimate,'lm',cni=c(F,T,T,T),nil=nil,trim=F),
-				id,'lma',nil,es.lm$max-es.lma$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lmb$max,es.lmb$titer,es.lmb$runtime,
-				modpars(es.lmb$estimate,'lm',cni=c(T,F,T,T),nil=nil,trim=F),
-				id,'lmb',nil,es.lm$max-es.lmb$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lmc$max,es.lmc$titer,es.lmc$runtime,
-				modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),nil=nil,trim=F),
-				id,'lmc',nil,es.lm$max-es.lmc$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lms$max,es.lms$titer,es.lms$runtime,
-				modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),nil=nil,trim=F),
-				id,'lms',nil,es.lm$max-es.lms$max)),
-			    file=labels$main,sep='\t',append=T,col.names=F,row.names=F);
-
-		write.table(t(c(es.e$group0$maximum,es.e$group1$maximum,id,'e',nil)),
-			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.g$group0$maximum,es.g$group1$maximum,id,'g',nil)),
-			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.gm$group0$maximum,es.gm$group1$maximum,id,'gm',nil)),
-			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.l$group0$maximum,es.l$group1$maximum,id,'l',nil)),
-			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.lm$group0$maximum,es.lm$group1$maximum,id,'lm',nil)),
-			    file=labels$unc,sep='\t',append=T,col.names=F,row.names=F);
-
-		write.table(t(c(es.gmlm$max,es.gmlm$titer,es.gmlm$runtime,
-				modpars(es.gmlm$estimate,'lm',trim=F),id,'gmlm',nil)),
-			    file=labels$gml,sep='\t',append=T,col.names=F,row.names=F);
-		write.table(t(c(es.llm$max,es.llm$titer,es.llm$runtime,
-				modpars(es.llm$estimate,'lm',trim=F),id,'llm',nil)),
-			    file=labels$gml,sep='\t',append=T,col.names=F,row.names=F);
-	}
-	if(summary){
-		maxs<-c(es.e$max,es.g$max,es.ga$max,es.gb$max,es.gm$max,es.gma$max,es.gmb$max,es.gmc$max,
-			es.l$max,es.la$max,es.lb$max,es.ls$max,es.gmlm$max,es.llm$max,es.lma$max,
-			es.lmb$max,es.lmc$max,es.lms$max);
-		iters<-c(0,es.g$titer,es.ga$titer,es.gb$titer,es.gm$titer,es.gma$titer,es.gmb$titer,
-			es.gmc$titer,es.l$titer,es.la$titer,es.lb$titer,es.ls$titer,es.gmlm$titer,
-			es.llm$titer,es.lma$titer,es.lmb$titer,es.lmc$titer,es.lms$titer);
-		difs<-sign(c(0,es.g$max-es.e$max,es.g$max-es.ga$max,es.g$max-es.gb$max,es.gm$max-es.g$max,
-			es.gm$max-es.gma$max,es.gm$max-es.gmb$max,es.gm$max-es.gmc$max,es.l$max-es.g$max,
-			es.l$max-es.la$max,es.l$max-es.lb$max,es.l$max-es.ls$max,es.gmlm$max-es.gm$max,
-			es.llm$max-es.l$max,es.lm$max-es.lma$max,es.lm$max-es.lmb$max,
-			es.lm$max-es.lmc$max,es.lm$max-es.lms$max));
-		out<-cbind(maxs,iters,difs);
-		#rownames(ests)<-
-		rownames(out)<-c('E','G','Ga','Gb','GM','GMa','GMb','GMc','L','La','Lb','Ls',
-						'GMLM','LLM','LMa','LMb','LMc','LMs');
-		print(out,digits=22);#print(ests);
-		print(sum(out[,2]));invisible(list(results=out));
-	}
-}
-
-`modpars`<-
-function(x,modeli,modelo=NULL,cni=rep(T,4),cno=NULL,nil=1e-7,pf=mean,trim=F){
-	if(sum(is.null(x))>0){print('input params contain nulls!');traceback();browser();};
-	if(is.null(modelo)){modelo<-modeli;}; if(is.null(cno)){cno<-cni;};
-	keepi<-switch(modeli,e=c(1,5),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
-	keepo<-switch(modelo,e=c(1,5),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
-	# Will eventually do more input validation, but for now let's agree to pass 
-	# constraints as vectors of either 4 or 1 logical values
-	cni <- !cni; if(length(cni)==1){cni<-rep(cni,4);};
-	cno <- !cno; if(length(cno)==1){cno<-rep(cno,4);};
-	if(length(cni)+length(cno)!=8){stop('In this version constraints must be specified
-either as a single boolean value or a vector
-of four boolean values. Please fix your input
-and try again.');}
-	keepi<-keepi[c(rep(T,4),!cni)[keepi]];
-	if(length(x)!=length(keepi)){
-		print('Mismatch between model and parameter length.');traceback();browser();
-	}
-	# Here we convert the unique-values-only parameter vector into standard form
-	out<-rep.int(NA,8); out[keepi]<-x; 
-	if(sum(cni)>0){out[5:8][cni]<-out[1:4][cni];}
-	# We insure that any parameters used by the target model are populated
-	out[keepo][is.na(out[keepo])]<-nil;
-	# Now we apply the target model's constraints
-	if(sum(cno)>0){
-		# If the target constraint is different from the input constraint,
-		# average the two parameters using the function specified by pf
-		# No point in doing this is the constraints are the same
-		if(sum(cni==cno)<4&sum(out[cno]>0)){
-			out[cno]<-apply(out*as.matrix(diag(cno)[c(1:4,1:4),cno]),2,
-				       function(x,f){f(na.omit(x[x!=0]));},pf);
-		}
-		if(trim){out[5:8][cno]<-NA;}
-	}
-	# Gotta remember to trash the unused parameters for the target model.
-	out[-keepo]<-NA;
-	if(trim){out<-as.numeric(na.omit(out));} 
-	return(out);
-}
 
 `compsurvs`<-
 function(a,b){
@@ -411,9 +50,56 @@ function(a,b){
 }
 
 
+`simdist`<-
+function(x,label,nil=6e-10,bnil=0.005,pf=mean,rounds=50000,models=c('g','gm','l','lm'),
+	 dropcols=c('a2','b2','c2','s2'),sims=NULL,pars=NULL){
+	ihaz<-findpars(x,nil=nil,bnil=bnil,pf=pf,models=models); pars<-list();
+	lx<-length(x); 
+	if(is.null(sims)) {sims<-list();}
+	msize<-lx*rounds;
+	for(m in models){
+		#.models is a data object with information about the supported models
+		# that gets loaded when the library is loaded
+		nm<-.models[[m]]$nests;
+		for(nmi in nm){
+			pairname=paste(nmi,m,sep='');
+			npars<-ihaz[ihaz$model==nmi,c('a1','b1','c1','s1')];
+			npars[is.na(npars)]<-0;
+			pars[[pairname]]<-npars;
+			if(match(nmi,names(sims),nomatch=0)==0){
+				sims[[nmi]]<-matrix(simsurv(msize,nmi,npars),nrow=lx,ncol=rounds);
+				cat('Done simulating',nmi,'\n');
+			}
+		}
+	}
+	save(list=c('pars','sims'),file=paste(label,'.sims.rdata',sep=''));
+	save(ihaz,file=paste(label,'.rdata',sep=''));
+	print('Commencing parameter fitting');
+	for(i in 1:rounds){
+		for(m in models){
+			nm<-.models[[m]]$nests;
+			for(nmi in nm){
+				pairname=paste(nmi,m,sep='');
+				out<-findpars(sims[[nmi]][,i],nil=nil,bnil=bnil,models=m,id=i);
+				out<-out[,setdiff(names(out),dropcols)];
+				out<-cbind(out,null_pars=pars[[pairname]],null_model=nmi,target_model=m);
+				mlabel<-paste(label,m,sep='_');
+				if(i!=1|nmi!=nm[1]){
+					write.table(out,file=mlabel,sep='\t',col.names=F,row.names=F,
+						    append=T);
+				} else { write.table(out,file=mlabel,sep='\t',row.names=F,append=T);}
+			}
+		}
+	}
+}
+
 `empdist` <-
-function(x,y,label,nil=2e-7,pf=mean,rounds=5000,type='p'){
+function(x,y,label,nil=0,bnil=0,pf=mean,rounds=5000,type='p',models=NULL){
 	d<-int2tab(x,y); lx<-length(x); ly<-length(y); lxy<-lx+ly;
+	if(is.null(models)){
+		models<-c('g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
+		          'lm','lma','lmb','lmc','lms');
+	}
 	labels<-list(main=paste(label,'.main.txt',sep=''),
 		     unc=paste(label,'.unc.txt',sep=''),
 		     gml=paste(label,'.gml.txt',sep=''));
@@ -424,7 +110,19 @@ function(x,y,label,nil=2e-7,pf=mean,rounds=5000,type='p'){
 		write.table(m,paste(label,'_perms.txt',sep=''),col.names=F,row.names=F,sep='\t');
 		cat('\nCommencing permutations.\n');
 		for(i in 1:(rounds+1)){
-			findpars(d[m[,i]==0,1],d[m[,i]==1,1],nil=nil,pf=pf,labels=labels,id=i);
+			findpars(d[m[,i]==0,1],d[m[,i]==1,1],nil=nil,bnil=bnil,models=models,pf=pf,
+				 labels=labels,id=i);
+		}
+	}
+	if(type=='r'){
+		m<-matrix(nrow=lxy,ncol=rounds);
+		for(i in 1:rounds){m[,i]<-c(sample(x,lx,rep=T),sample(y,ly,rep=T));}
+		m<-cbind(d[,1],m);
+		write.table(m,paste(label,'_resam.txt',sep=''),col.names=F,row.names=F,sep='\t');
+		cat('\nCommencing resampling.\n');
+		for(i in 1:(rounds+1)){
+			findpars(m[d[,2]==0,i],m[d[,2]==1,i],nil=nil,bnil=bnil,models=models,pf=pf,
+				 labels=labels,id=i);
 		}
 	}
 	if(type=='b'){
@@ -439,57 +137,14 @@ function(x,y,label,nil=2e-7,pf=mean,rounds=5000,type='p'){
 		write.table(rsy,paste(label,'_yboot.txt',sep=''),col.names=F,row.names=F,sep='\t');
 		cat('\nCommencing bootstrap.\n');
 		for(i in 1:(rounds+1)){
-			findpars(rsx[,i],rsy[,i],nil=nil,pf=pf,labels=labels,id=i);
+			findpars(rsx[,i],rsy[,i],nil=nil,bnil=bnil,models=models,pf=pf,
+				 labels=labels,id=i);
 		}
 	}
 }
 
 
-`permsurv.old` <-
-function(x,y,label,perms=5000,pars=NULL){
-	d<-int2tab(x,y); lxy<-dim(d)[1]; pr<-matrix(nrow=lxy,ncol=perms);
-	for(i in 1:perms){pr[,i]<-sample(d[,2],lxy);}
-	pr<-cbind(d[,2],pr);
-	if(is.character(pars)){parslabel<-pars;pars<-NULL;}
-	else{parslabel<-paste(label,'pars',sep='');cat('\nLooking for',parslabel,'\n');}
-	# need to write some kind of validation function for fits
-	if(is.null(pars)|length(pars)!=4){
-		if(exists(parslabel)){cat('\nFound',parslabel,'\n');pars<-get(parslabel);}
-		else{pars<-startpars.old(x,y,label,perms=10);}
-	}
-	cat('\nCommencing permutations.\n');
-	for(i in 1:(perms+1)){
-		for(j in 1:length(pars)){
-			for(k in 1:length(pars[[j]])){
-				jkts<-as.numeric(Sys.time());
-				jklabel<-paste(pars[[j]][[k]]$label,jkts,sep='');
-				jkfit<-opsurv(d[pr[,i]==0,1],d[pr[,i]==1,1],names(pars)[j],
-						cons=pars[[j]][[k]]$cons, par=pars[[j]][[k]]$par);
-				jktab<-c(jkfit$maximum,jkfit$titer,jkfit$runtime,jkfit$estimate,
-						jkfit$group0$maximum,jkfit$group1$maximum);
-				assign(jklabel,jkfit);
-				dump(jklabel, paste(pars[[j]][[k]]$label,'.R',sep=''),
-				     append=T,control='S_compatible');
-				#print('');print(jktab);
-				write.table(t(jktab),paste(pars[[j]][[k]]$label,'.txt',sep=''),sep='\t',
-					    append=T,col.names=F,row.names=F);
-			}
-		}
-	}
-	save(list=ls(),file=paste(label,'debug.rdata',sep=''));
-}
 
-
-`hazwrapper.old` <-
-function(data,foo,outlog='hazlog.R',debuglog='hazdebug.R',debugvars=c('estimate','maximum','titers','runtime'),...){
-	ts<-as.numeric(Sys.time()); data[,1]<-data[,1][foo]; 
-	outname<-paste('out',ts,sep='.');
-	assign(outname,opsurv('lm',data[data[,2]==0,1],data[data[,2]==1,1],...));
-	if(!is.null(outlog)){
-		dump(outname,outlog,append=T,control='S_compatible')
-	}
-	get(outname)$maximum;
-}
 
 `gmean`<-
 function(x){exp(sum(log(x))/length(x));}
@@ -523,6 +178,99 @@ function(label,path='./',extramain=0){
 	cat('Output collected from',max(get(gml)$id),'iterations.\n');
 }
 
+
+`templatelr`<-
+function(perm,perm2,which,...){
+	switch(which,
+	lm={plotmultlrs(perm,perm2,c('lm','lm','lm','lm'),c('lma','lmb','lmc','lms'),
+		...)},
+	unc={plotmultlrs(perm,perm2,c('gm','l','lm','lm','lm'),c('g','g','l','gm','g'),
+		...)}
+	)
+}
+
+`rowcols`<-
+function(n){
+	if(n<5){return(c(1,n));}
+	if(n==7|n==8){return(c(2,4));}
+	if(12<n&n<=15){return(c(3,5));}
+	out<-sqrt(n); rout<-round(out);
+	if(out<=rout){return(c(rout,rout))
+	}else{return(c(rout,rout+1))};
+}
+
+`plotmultestdens`<-
+function(perms,pars1=c('a1','b1','c1','s1'),pars2=c('a2','b2','c2','s2'),cex=.75,...){
+	len<-length(pars1);
+	# maybe some input validation for pars1 and pars2 length later
+	close.screen(all=T);
+	par(cex=cex);par(bg='white');scrs<-split.screen(rowcols(len));
+	for(i in 1:len){
+		screen(scrs[i]);
+		plotestdens(perms,,pars1[i],pars2[i],...);
+	}
+	invisible(scrs);
+}
+
+`plotestdens`<-
+function(perms,fits=c('g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
+		      'lm','lma','lmb','lmc','lms'),
+	 par1='a1',par2='a2',log=F,ymax=0.02){
+	if(length(grep('c',c(par1,par2)))>0){fits<-fits[grep('m',fits)];} else {
+		if(length(grep('s',c(par1,par2)))>0){fits<-fits[grep('l',fits)];}
+	}
+	temp<-list();overall<-c(); lperms<-length(perms); lfits<-length(fits);
+	num<-lperms*lfits;
+	cols1<-matrix(rainbow(num,start=.5,end=1),nrow=lperms,ncol=lfits);
+	cols2<-matrix(rainbow(num,start=.5,end=1,s=.75,v=1),nrow=lperms,ncol=lfits);
+	for(i in perms){
+		iperm<-get(i);
+		for(j in fits){
+			jperm1<-subset(iperm,fit==j)[[par1]];
+			jperm2<-subset(iperm,fit==j)[[par2]];
+			if(log){jperm1<-log(jperm1);jperm2<-log(jperm2);}
+			if(sum(!is.na(jperm1))>0){
+				temp[[i]][[j]][[1]]<-density(jperm1,na.rm=T);
+				temp[[i]][[j]][[1]]$y<-
+					temp[[i]][[j]][[1]]$y/sum(temp[[i]][[j]][[1]]$y);
+			}
+			if(sum(!is.na(jperm1))>0){
+				temp[[i]][[j]][[2]]<-density(jperm2,na.rm=T);
+				temp[[i]][[j]][[2]]$y<-
+					temp[[i]][[j]][[2]]$y/sum(temp[[i]][[j]][[2]]$y);
+			}
+			overall<-c(overall,jperm1,jperm2);
+		}
+	}
+	xlim<-range(overall,finite=T);
+	plot(temp[[1]][[1]][[1]],xlim=xlim,ylim=c(0,ymax),
+	     main=paste('Distribution of Estimates \nfor Parameters',par1,'&',par2),
+	     sub='');
+	for(i in 1:lperms){
+		for(j in 1:lfits){
+			lines(temp[[i]][[j]][[1]],col=cols1[i,j]);
+			lines(temp[[i]][[j]][[2]],col=cols2[i,j]);
+		}
+	}
+}
+
+`plotmultlrs`<-
+function(perm,perm2,fits1=c('g','g','gm','gm','gm','l','l','l','lm','lm','lm','lm'),
+	 fits2=c('ga','gb','gma','gmb','gmc','la','lb','ls','lma','lmb','lmc','lms'),
+	 df=1,breaks=100,abcol='red',cex=.75,extraab=NULL,...){
+	close.screen(all=T);
+	len<-min(length(fits1),length(fits2));breaks<-rep(breaks,len=len);
+	abcol<-rep(abcol,len=len); df<-rep(df,len=len);
+	length(fits1)<-length(fits2)<-len;
+	par(cex=cex);par(bg='white');scrs<-split.screen(rowcols(len));
+	for(i in 1:len){
+		screen(scrs[i]); #par(mar=rep(3,4));
+		plotlr(perm,perm2,fits1[i],fits2[i],breaks=breaks[i],abcol=abcol[i],
+		       df=df[i],extraab=extraab[i],...);
+	}
+	invisible(scrs);
+}
+
 `plot.mainhaz`<-
 function(perm,breaks=100,add=F,col=1,abcol='red',onescreen=T,what='cons'){
 	if(what=='cons'){
@@ -552,18 +300,194 @@ function(perm,breaks=100,add=F,col=1,abcol='red',onescreen=T,what='cons'){
 	if(onescreen){layout(matrix(1,1,1));}
 }
 
+`loadlr`<-
+function(label,suffixes=c('g','gm','l','lm'),sep='\t',header=1){
+	label<-paste(label,suffixes,sep='');
+	for(i in label){assign(i,read.table(i,header=header,sep=sep),envir=.GlobalEnv);}
+}
+
+`modelshow`<-
+function(label,x=NULL,k=2,datacol='LR',modelcol='model',nullmodelcol='null_model',chicol='p (chi squared)',figure=T,
+	 models=c('g','gm','l','lm'),breaks=200,lwd=2,hcol='black',vcol='red',chidf=1,rc=NULL){
+	# x is output from findpars; the names of data.frames from which to make histograms
+	# are constructed from x and then looked for in the parent environment
+	ms<-c();
+	for(m in models){
+		nm<-.models[[m]]$nests;
+		for(nmi in nm){
+			if(length(nm)>1){pairname<-paste(nmi,m,sep='');}else{pairname<-m;}
+			ms<-rbind(ms,data.frame(nmod=nmi,mod=m,pairname=pairname,
+				  dname=paste(label,m,sep=''),stringsAsFactors=F));
+		}
+	}
+	ml<-dim(ms)[1];updatex=F;
+	if(!is.null(x)&match('emp.p',names(x),nomatch=0)==0){x<-cbind(x,'emp.p'=NA);updatex=T;}
+	if(is.null(rc)){rc<-rowcols(ml);}
+	close.screen(all=T); scrs<-split.screen(rc);
+	for(i in 1:ml){
+		screen(i);
+		if(exists(ms[i,'dname'])){d<-get(ms[i,'dname']);}
+		if(exists('d')){
+			if(figure){
+				hist(k*d[d[[modelcol]]==ms[i,'pairname'] & 
+						d[[nullmodelcol]]==ms[i,'nmod'],datacol],
+					breaks=breaks,freq=F,border=hcol,
+				main=paste('MLE Log Ratio:',ms[i,'nmod'],'vs',ms[i,'mod']),xlab='');
+			}
+			if(!is.null(x)){
+				reallr<-x[x[[modelcol]]==ms[i,'pairname'],datacol];
+				if(figure){abline(v=reallr,col=vcol);}
+				if(updatex){
+					iecdf<-ecdf(k*d[d[[modelcol]]==ms[i,'pairname'] & 
+						    d[[nullmodelcol]]==ms[i,'nmod'],datacol]);
+					x[x[[modelcol]]==ms[i,'pairname'],'emp.p']<-1-iecdf(reallr);
+				}
+			}
+			if(!is.null(chidf)&figure){
+				lines(seq(0,15,l=500),dchisq(seq(0,15,l=500),df=chidf),col=vcol);
+			}
+			if(figure){
+				title(sub=sprintf('p chisq = %1.4G,   p emp = %1.4G',
+					x[x[[modelcol]]==ms[i,'pairname'],chicol],x[x[[modelcol]]==ms[i,'pairname'],'emp.p']));
+			}
+		} else if(figure){hist(0,main=paste('Cannot find data.frame',dataname));}
+	}
+	#close.screen(all=T);
+	if(updatex){invisible(x);}
+}
+
+`constrshow`<-
+function(d,x=NULL,k=2,datacol='LR',idcol='id',idobs=1,modelcol='model',nullmodelcol='null_model',chicol='p (chi squared)',
+	 figure=T,models=c('ga','gb'),breaks=200,lwd=2,hcol='black',vcol='red',chidf=1,rc=NULL){
+	if(is.null(x)){x<-d[d[[idcol]]==idobs,];}; if(is.null(rc)){rc<-rowcols(length(models));}
+	if(match('emp.p',names(x),nomatch=0)==0){x<-cbind(x,'emp.p'=NA);updatex=T;}
+	close.screen(all=T); scrs<-split.screen(rc);
+	for(i in 1:length(models)){
+		screen(i);
+		reallr<-x[x[[modelcol]]==models[i],datacol];
+		if(updatex){
+			iecdf<-ecdf(k*d[d[[modelcol]]==models[i],datacol]);
+			x[x[[modelcol]]==models[i],'emp.p']<-1-iecdf(reallr);
+		}
+		if(figure){
+			hist(k*d[d[[modelcol]]==models[i],datacol],breaks=breaks,freq=F,border=hcol,
+			     main=paste('MLE Log Ratio:',models[i]),xlab='');
+			title(sub=sprintf('p chisq = %1.4G,   p emp = %1.4G', x[x[[modelcol]]==models[i],chicol],x[x[[modelcol]]==models[i],'emp.p']));
+			if(!is.null(chidf)){
+				lines(seq(0,15,l=500),dchisq(seq(0,15,l=500),df=chidf),col=vcol);
+			}
+			abline(v=reallr,col=vcol);
+		}
+	}
+	if(updatex){invisible(x);}	
+}
+
+
+`survpowab`<-
+function(x,label,model='ga',reps=6,nil=0,bnil=0,ns=NULL,add=0,mult=1.1,lrcol='LR',sig=.05,pow=.8,parmax=1){
+	# the if is.null idiom is to keep the function declaration uncluttered
+	# if(is.null(ns)){ns<-c(5,10,15,20,25,30,35,40,45,50,100,200,500,1000);}
+	if(is.null(ns)){ns<-c(20,50,100,200,500);}
+	chisig<-qchisq(sig,df=1,lower=F);
+	lx<-length(x); basemodel<-sub('a|b|c|s','',model); testparam<-sub('w|g|gm|l|lm','',model);
+	realfit<-findpars(x,nil=nil,bnil=bnil,models=basemodel);
+	# the hardcoded g is not compatible with 'c' and 's' parameters
+	nullpars<-realfit[realfit[['model']]==basemodel,c('a1','b1','c1','s1')];
+	names(nullpars)<-c('a','b','c','s'); 
+	nullpars[is.na(nullpars)]<-nil;
+	if(nullpars[testparam]==0){mult<-1;if(add==0){add<-0.001;}}
+	for(i in ns){
+		cat('\nn:',i,' ');
+		# simsurv automatically downgrades to 'g' family of models if s ~ 0
+		ix<-simsurv(i,'l',nullpars);
+		pars<-nullpars; plr<-0; pars[testparam]<-pars[testparam]*mult+add; out<-c();
+		while(plr<pow & pars[testparam]<=parmax & pars[testparam]>0){
+			cat('plr:',plr,' ');
+			lr<-c();
+			for(j in 1:reps){
+				redo=T;
+				while(redo){
+					jx<-simsurv(i,'l',pars);
+					jfit<-try(findpars(ix,jx,nil=nil,bnil=bnil,models=model));
+					if(class(jfit)[1]!="try-error"){redo=F;}else{print(jx);}
+				}
+				jlr<-jfit[jfit[['model']]==model,lrcol]; lr<-c(lr,jlr);
+				jfit[['rep']]<-j; jfit[['par']]<-c('a','b','c','s')[testparam];
+				jfit[['N']]<-i; jfit[['mean']]<-mean(jx); jfit[['sd']]<-sd(jx);
+				jfit[['q50']]<-quantile(jx,.5);jfit[['q75']]<-quantile(jx,.75);
+				jfit[['q90']]<-quantile(jx,.9);jfit[['q95']]<-quantile(jx,.95);
+				jfit<-cbind(jfit,pars);jfit[['pow']]<-NA;
+				jfit[['pLR']]<-NA;jfit[['LR']]<-jlr;
+				out<-rbind(out,jfit);
+			}
+			pars[testparam]<-pars[testparam]*mult+add;
+			plr<-sum(lr>chisig)/length(lr);print(lr);print(pars);print(add);
+			out[is.na(out$pow),]$pow<-plr;
+			out[is.na(out$pLR),]$pLR<-quantile(lr,1-pow);
+		}
+		if(file.exists(label)){
+			write.table(out,file=label,sep='\t',col.names=F,row.names=F,append=T);
+		} else {write.table(out,file=label,sep='\t',col.names=T,row.names=F,append=T);}
+	}
+}
+
 `plotlr`<-
-function(perm,fit1='gm',fit2='g',breaks=100,df=1,col=1,abcol='red',add=F){
+function(x,realid=1,model='g',lrcol=4,modcol=3,idcol=8,k=2,breaks=100,barcol='black',linecol='red',draw=T){
+	# x is the dataframe obtained by reading the output file from findpars
+	# k is two unless the log ratio has already been doubled in which case
+	# is should be set to 1. realid is the id corresponding to the real, 
+	# non-bootstrapped comparison. Set it to null in order to not draw the
+	# line for that comparison
+	# most of the other parameters are the corresponding columns where to
+	# look for the respective values
+	if(draw){hist(k*x[x[,modcol]==model,lrcol],freq=F,border=barcol,breaks=breaks);}
+	out<-c();
+	if(!is.null(realid)){
+		reallr<-k*x[x[,idcol]==1&x[,modcol]==model,lrcol];
+		if(draw){abline(v=reallr,col=linecol);}
+		myecdf<-ecdf(k*x[x[,modcol]==model,lrcol]);
+		out<-1-myecdf(reallr);
+	}
+	return(out);
+}
+
+`plotlr.old`<-
+function(perm,perm2,fit1='gm',fit2='g',breaks=100,df=1,col=c(1,'green'),
+	 abcol='red',extraab=NULL,extracol='blue',add=F,log=F,ylim=0.2,...){
 	lrs<-2*(subset(perm,fit==fit1)$max-subset(perm,fit==fit2)$max);
-	badlrs<-lrs<0; sumbad<-sum(badlrs);
-	cat(fit1,'vs',fit2,'fraction <0:',sumbad/length(lrs),'\n');
-	print(summary(lrs[badlrs]));
-	if(sumbad<10){cat(lrs[badlrs],'\n');} else {cat(lrs[badlrs][1:10],'...\n');}
 	empp<-1-ecdf(lrs)(lrs[1]);
 	chip<-pchisq(lrs[1],df,lower=F);
-	hist(lrs,breaks=breaks,border=col,main=paste(fit1,'vs',fit2),sub='',add=add,
-	     xlab=paste('Emp. p:',format(empp,digits=3),'  Chi-sq p:',format(chip,digits=3)));
+	badlrs<-lrs<0; sumbad<-sum(badlrs);
+	if(exists('perm2')){
+		lrs2<-2*(subset(perm2,fit==fit1)$max-subset(perm2,fit==fit2)$max);
+		badlrs2<-lrs<0; sumbad<-sum(badlrs2);
+		if(log){lrs2<-log(lrs2);}
+	}
+	if(log){lrs<-log(lrs);} 
+	if(exists('perm2')){xlim<-range(lrs,lrs2,finite=T);
+	} else {xlim<-range(lrs,finite=T);}
+	breaks=seq(xlim[1],xlim[2],len=breaks); 
+
+	#cat(fit1,'vs',fit2,'fraction <0:',sumbad/length(lrs),'\n');
+	#print(summary(lrs[badlrs]));
+	#if(sumbad<10){cat(lrs[badlrs],'\n');} else {cat(lrs[badlrs][1:10],'...\n');}
+	bars<-hist(lrs,breaks=breaks,plot=F); 
+	bars$counts<-bars$counts/sum(bars$counts);
+	plot(bars,col=NULL, border=col[1],main=paste(fit1,'vs',fit2),
+		 sub='',add=add,ylim=c(0,ylim),xlim=xlim,
+		 xlab=paste('Emp. p:',format(empp,digits=3),
+			    '  Chi-sq p:',format(chip,digits=3)));
 	abline(v=lrs[1],col=abcol);
+	if(exists('perm2')){
+		bgbak<-par('bg');par(bg='transparent');
+		bars<-hist(lrs2,breaks=breaks,plot=F);
+		bars$counts<-bars$counts/sum(bars$counts);
+		plot(bars,col=NULL,border=col[2],main='',sub='',xlab='',add=T,
+		     ylim=c(0,ylim),xlim=xlim,lty=4);
+		abline(v=lrs2[1],col=abcol);
+		par(bg=bgbak);
+	}
+	if(!is.null(extraab)){abline(v=extraab,col=extracol);}
 }
 
 
@@ -577,6 +501,7 @@ function(perm,val='gm',par='a1',breaks=100,add=F,col=1){
 `parnames`<-
 function(i,j){
 	model<-constraint<-parameters<-c();
+	i<-toupper(i);
 	switch(i,
 		{model<-'LM'; switch(j,
 				{constraint<-'u'; parameters<-c('a','b','c','s','a','b','c','s');},
@@ -610,50 +535,6 @@ function(i,j){
 	list(model=model,constraint=constraint,parameters=parameters);
 }
 
-`spyhaz.old`<-
-function(label,show=c('models','lm','l','gm','g','pars')){
-	fit<-input<-list(lm=list(u=list(),a=list(),b=list(),c=list(),s=list()), 
-			 l=list(u=list(),a=list(),b=list(),s=list()),
-			 gm=list(u=list(),a=list(),b=list(),c=list()),
-			 g=list(u=list(),a=list(),b=list()));
-	models<-list(g.l=c(),g.gm=c(),l.lm=c(),gm.lm=c());
-	class(fit)<-'spyfit';class(input)<-'spyinput';class(models)<-'spymodels';
-	for(i in 1:length(input) ){
-		for(j in 1:length(input[[i]]) ){
-			input[[i]][[j]]<-read.table(paste(label,'_',names(input)[i],names(input[[i]])[j],
-							  '.txt',sep=''));
-			ijcifile<-paste(label,'_resam_',names(input)[i],names(input[[i]])[j],
-					'.txt',sep='');
-			if(file.exists(ijcifile)){
-				ijci<-read.table(ijcifile);
-				#attr(input[[i]][[j]],'ci')<-apply(ijci,2,quantile,c(.05,.95));
-				attr(input[[i]][[j]],'ci')<-ijci;
-			} else ijci<-NULL;
-			if(j>1){ 
-				fit[[i]][[j]]<-2*(input[[i]]$u[,1] - input[[i]][[j]][,1]);
-				if(!is.null(ijci) & exists('iuci')){
-# 					attr(fit[[i]][[j]],'ci')<-quantile(2*(iuci[,1]-ijci[,1]),
-# 									   c(.05,.95));
-					attr(fit[[i]][[j]],'ci')<-2*(iuci[,1]-ijci[,1]);
-				}
-			} else { iuci<-ijci; }
-		}
-	}
-	models$g.l<-2*(input$l$u[,1] - input$g$u[,1]);
-	attr(models$g.l,'ci')<-2*(attr(input$l$u,'ci')[,1]-attr(input$g$u,'ci')[,1]);
-	models$g.gm<-2*(input$gm$u[,1] - input$g$u[,1]);
-	attr(models$g.gm,'ci')<-2*(attr(input$gm$u,'ci')[,1]-attr(input$g$u,'ci')[,1]);
-	models$l.lm<-2*(input$lm$u[,1] - input$l$u[,1]);
-	attr(models$l.lm,'ci')<-2*(attr(input$lm$u,'ci')[,1]-attr(input$l$u,'ci')[,1]);
-	models$gm.lm<-2*(input$lm$u[,1] - input$gm$u[,1]);
-	attr(models$gm.lm,'ci')<-2*(attr(input$lm$u,'ci')[,1]-attr(input$gm$u,'ci')[,1]);
-	models$g.lm<-2*(input$lm$u[,1] - input$g$u[,1]);
-	attr(models$g.lm,'ci')<-2*(attr(input$lm$u,'ci')[,1]-attr(input$g$u,'ci')[,1]);
-
-	assign(paste(label,'fit',sep=''),fit,envir=.GlobalEnv);
-	assign(paste(label,'input',sep=''),input,envir=.GlobalEnv);
-	assign(paste(label,'models',sep=''),models,envir=.GlobalEnv);
-}
 
 `print.spyfit`<-
 function(x,type=c('plot','table'),...){
@@ -799,42 +680,6 @@ function(x,type=c('plot','table'),...){
 	}
 }
 
-`spyhaz2`<-
-function(logfile,realval=NULL){
-	env<-new.env();sys.source(logfile,env);logtemp<-as.list(env);
-	out<-list(); out$log<-logtemp;
-	out$loglen<-loglen<-length(logtemp);
-	if(is.null(realval)){out$realval<-realval<-logtemp[[loglen]];}
-	out$realmax<-realmax<-realval$maximum;
-	ests<-maxs<-iters<-rts<-c();
-	for(i in logtemp){
-		ests<-rbind(ests,i$estimate);
-		maxs<-c(maxs,i$maximum);iters<-c(iters,i$titer);rts<-c(rts,i$runtime);
-	};
-	out$ests<-ests; out$maxs<-maxs; out$iters<-iters; out$rts<-rts;
-	lests<-dim(ests)[2];
-	hist(maxs,breaks=1000,xlim=c(min(maxs),max(maxs)),freq=F);
-	abline(v=realmax,col='red');myecdf<-ecdf(maxs);
-	out$permp<-1-myecdf(realmax); out$avgrt<-sum(rts)/loglen; out$loglen<-loglen;
-	maxests<-minests<-means<-gmeans<-medians<-numeric(lests);
-	for(i in 1:lests){
-		means[i]<-mean(ests[,i]);medians[i]<-median(ests[,i]);gmeans[i]<-gmean(ests[,i]);
-		maxests[i]<-max(ests[,i]);minests[i]<-min(ests[,i]);
-	}
-	avpars<-rbind(means,medians,gmeans,maxests,minests);
-	out$avpars<-avpars;
-	class(out)<-'spyhaz';
-	print(out);
-	invisible(out);
-}
-
-`print.spyhaz2`<-
-function(x,...){
-	cat('permuted p:',x$permp,'\n');
-	cat('avg runtime:',x$avgrt,'\n');
-	cat('# perms:',x$loglen,'\n');
-	print(x$avpars);
-}
 
 `raw2wm`<-
 function(t){
@@ -856,3 +701,39 @@ function(x,y,labels=c(0,1)){cbind(c(x,y),c(rep(labels[1],length(x)),rep(labels[2
 `int2tab`<-
 function(x,y,labels=c(0L,1L))
 	{cbind(as.integer(c(x,y)),c(rep(labels[1],length(x)),rep(labels[2],length(y))));}
+
+`plotsurv`<-
+function(x,y,col=c(1,'darkred'),lwd=2,legend=NULL,lloc='bottomleft',...){
+	plot(survfit(Surv(c(x,y))~c(rep(0,length(x)),rep(1,length(y)))),
+	     col=col,lwd=lwd,...);
+	if(!is.null(legend)){legend(x=lloc,col=col,lwd=lwd,legend=legend);}
+}
+
+# this is to pull out just the significant model and parameters from the output of findpars
+`hztblsumm`<-
+function(x,fcols=c('MLE','a1','b1','c1','s1','a2','b2','c2','s2','model','LR','p (chi squared)'),
+	 frows='g$|gm$|l$|lm$', modcol=fcols[10], pcol=fcols[12], cutoff=.05){
+	# fcols are the current names of the columns of interest, frows is a grep
+	# search term for pulling out the currently implemented models (the $ avoids
+	# pulling out the constrained versions of those models). modcol and pcol
+	# identify the name of the input columns containing the model name and the p value,
+	# respectively
+	out<-x[grep(frows,x[,modcol]),fcols];
+	issig=T; i=2; n.models<-dim(out)[1];
+	# check each unconstrained model to see if it passes the cutoff. If it doesn't, stop.
+	# NOTE: Need to hardcode an exception for the LM model, such that only the one with the
+	# lower p-value is included in the table by the time this calculation is run
+	while(issig & i < n.models){if(out[i,pcol]>cutoff){issig<-F;
+						}else{bestmdl<-out[i,modcol];i<-i+1;}}
+	# bestmdlc is assigned the grep search term for all the possible constrained versions
+	bestmdlc<-paste(bestmdl,'[a|b|c|s]',sep='');
+	# now we pull out the constrained fits from the input that correspond to the
+	# best model 
+	out<-rbind(x[grep('w',x[,modcol]),fcols],out,x[grep(bestmdlc,x[,modcol]),fcols]);
+	# now we add and populate a 'sig' column for quick visual reference of which models
+	# are good fits; note that for the constraints the fit criteria are REVERSED and
+	# might not be the right way to do it.
+	out$sig<-''; out[match(bestmdl,out[,modcol]),'sig']<-'*';
+	out[out[,pcol]>.05,'sig']<-'*'; attr(out,'n.models')<-n.models;
+	return(out);
+}

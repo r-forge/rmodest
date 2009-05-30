@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 // double bebxf(double *b, int *x){return(exp(*b * *x));}
@@ -32,7 +33,14 @@
 // 	}
 // }
 
-
+void ofw(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
+{
+	int n = *size;
+	while(--n >= 0){
+		*ans = *ans + log(pow(*a,*b) * *b * pow(x[n],(*b -1))) * censor[n];
+		*ans = *ans - pow(*a * x[n],*b);
+	}
+}
 
 void oflm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
@@ -51,19 +59,6 @@ void ofgm(double *a, double *b, double *c, double *s, int *x, int *size, int *ce
 {
 	double mys = 0;
 	oflm(a, b, c, &mys, x, size, censor, ans);
-/*	int n = *size; 
-	if(*b == 0){
-		while(--n >= 0){
-			*ans = *ans + log(*c + *a) * censor[n] -(*c * x[n]) - *a * x[n];
-		}
-	} else {
-		double expBX; double AdivB = *a/ *b;
-		while ( --n >= 0){
-			expBX = exp(*b * x[n]);
-			*ans = *ans + log(*c + *a * expBX) * censor[n];
-			*ans = *ans -(*c * x[n]) - AdivB * (expBX - 1);
-		}
-	}*/
 }
 
 void ofg(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
@@ -71,33 +66,29 @@ void ofg(double *a, double *b, double *c, double *s, int *x, int *size, int *cen
 	double myc = 0; double mys = 0;
 	oflm(a, b, &myc, &mys, x, size, censor, ans);
 }
-/* The objective function for the Logistic and Logistic-Makeham models (if c==0) */
-/*void oflm(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
-{ 
-	int n = *size; 
-	if(*b == 0){
-		while(--n >= 0){
-			*ans = *ans + log(*c + 1/(*s * x[n] + 1)) * censor[n];
-			*ans = *ans - *c * x[n] -log((*a * *s * x[n] +1)/ *s);
-		}
-	} else {
-		double expBX, add1toSAexpBXminus1divB;
-		double prdASdivB = *a * *s/ *b;
-		while ( --n >= 0){
-			expBX = exp(*b * x[n]); 
-			add1toSAexpBXminus1divB = 1 + prdASdivB * (expBX - 1);
-			*ans = *ans + log((*c + *a * expBX/add1toSAexpBXminus1divB)) * censor[n];
-			*ans = *ans + log(exp(- *c * x[n]) * pow(add1toSAexpBXminus1divB,(- 1/ *s)));
-		}
-	}
-}*/
-
 
 void ofl(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
 	double myc = 0;
 	oflm(a, b, &myc, s, x, size, censor, ans);
 }
+
+void gw(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
+{
+	int n = *size;
+	double suma; double sumb; double xpowb1;
+	double ab = pow(*a, *b); double abb = *b * ab;
+	while ( --n >= 0){
+		suma = suma + censor[n] * *b / *a;
+		suma = suma - *b * pow(*a * x[n],*b)/ *a;
+		xpowb1 = pow(x[n],*b - 1);
+		sumb = sumb + censor[n] * pow(x[n],1 - *b) * 
+			(xpowb1 * log(x[n]) * abb + log(*a) * xpowb1 * abb + xpowb1 * ab)/abb;
+		sumb = sumb - pow(*a * x[n],*b) * log(*a * x[n]);
+	}
+	ans[0] = suma; ans[1] = sumb;
+}
+
 
 void gg(double *a, double *b, double *c, double *s, int *x, int *size, int *censor, double *ans)
 {
@@ -178,5 +169,42 @@ void glm(double *a, double *b, double *c, double *s, int *x, int *size, int *cen
 		sums = sums + ((prdASexpBX + exp1B)*log(((prdASexpBX + exp1B))/exp1B)- prdASexpBX)/(pow2S * prdASexpBX + exp1B * pow2S); //ok
 	}
 	ans[0] = suma; ans[1] = sumb; ans[2] = sumc; ans[3] = sums;
+}
+
+
+double ghaz(double *a, double *b, double *c, double *s, int x)
+{return(exp(- (*a * (exp(*b * x) - 1)/ *b) - *c * x));}
+double lhaz(double *a, double *b, double *c, double *s, int x)
+{return(exp(- *c * x)*pow((1+ *s * *a * (exp(*b * x)-1)/ *b),(-1/ *s)));}
+double lhaz2(double *a, double *b, double *c, double *s, int x)
+{double asb = *a * *s/ *b; double expbx = exp(*b * x); double expcx = exp(- *c * x); 
+	double denom = pow(asb * expbx - asb + 1, 1/ *s);
+return(exp(- *c * x)/pow((asb * exp(*b * x) - asb + 1),1/ *s));}
+double whaz(double *a, double *b, double *c, double *s, int x)
+{double ax = *a * x; double axb = pow(ax,*b); double expaxb = exp(-axb);return(expaxb);}
+
+
+
+void simsurv(double *a, double *b, double *c, double *s, int *size, int *model, double *ans)
+{
+	int n = *size; int i;
+	double surv, rn;
+	double (*sf)(double *,double *,double *,double *,int);
+	sf = &whaz;
+	switch(*model){
+		case 1: sf = &whaz; break;
+		case 2: sf = &lhaz; break;
+		case 3: sf = &ghaz; break;
+		case 4: sf = &lhaz2; break;
+		default: printf("Warning: no case selected!\n");	
+	}
+	while(--n >= 0){
+		i = 1; surv = 1; rn = 0;
+		while(surv > rn){
+			surv = (*sf)(a,b,c,s,i+1)/(*sf)(a,b,c,s,i);
+			rn = (double)rand()/((double)(RAND_MAX)+(double)(1));
+			ans[n] = i; i++;
+		}
+	}
 }
 
