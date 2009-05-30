@@ -84,12 +84,12 @@ Pletcher, S. D. et al., (2000) Why Do Lifespans Differ? Partitioning Mean Longev
 \seealso{\code{\link{rq}},\code{\link{summary.rq}},\code{\link{surv2.logrank}}}
 \examples{
 # Can be directly called with no arguments, and it will prompt you for everything.
-# Can also be called with arguments:
-a<-simsurv(20);
-b<-simsurv(20,p=c(1e-6,0.003,0,0));
+# Can also be called with arguments.
+# a<-simsurv(20);
+# b<-simsurv(20,p=c(1e-6,0.003,0,0));
 # You can capture the output within R.
-output<-go(a,b,xynames=c('a','b'));
-output$go();
+# output<-go(a,b,xynames=c('a','b'));
+# output$go();
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
