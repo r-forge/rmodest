@@ -1,99 +1,100 @@
 \name{ezz}
+\Rdversion{1.1}
 \alias{ezz}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{ ~~function to do ... ~~ }
+\title{
+Score test for survival data.
+}
 \description{
-  ~~ A concise (1-5 lines) description of what the function does. ~~
+This function takes survival data from two groups and a list of quantiles and returns a table indicating whether one group or the other is significantly overrepresented in each quantile.
 }
 \usage{
 ezz(d, d2 = NULL, g, quant = 0.9, step = 0.01, thresh = 0.05, gnames = NULL, noob = F, thetas = c(0.05, 0.95), debug = F)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{d}{ ~~Describe \code{d} here~~ }
-  \item{d2}{ ~~Describe \code{d2} here~~ }
-  \item{g}{ ~~Describe \code{g} here~~ }
-  \item{quant}{ ~~Describe \code{quant} here~~ }
-  \item{step}{ ~~Describe \code{step} here~~ }
-  \item{thresh}{ ~~Describe \code{thresh} here~~ }
-  \item{gnames}{ ~~Describe \code{gnames} here~~ }
-  \item{noob}{ ~~Describe \code{noob} here~~ }
-  \item{thetas}{ ~~Describe \code{thetas} here~~ }
-  \item{debug}{ ~~Describe \code{debug} here~~ }
+  \item{d}{
+An integer vector of survival times (usually days).
+}
+  \item{d2}{
+An optional second integer vector of survival times (usually days). If this argument is used, 'd' is assumed to be the control group and 'd2' is assumed to be the experimental group. If this argument is left at its default of NULL, both groups are assumed to be in 'd' and the 'g' argument is used to separate them out.
+}
+  \item{g}{
+A charcter vector containing two distinct group names, and equal in length to the combined length of 'd' and 'd2'. However, if both 'd' and 'd2' are used, this argument may also just have a length of 2.
+}
+  \item{quant}{
+The quantiles to compare. The default is 0.9, but this argument can take a vector of numbers between 0 and 1.
+}
+  \item{step}{
+Internal parameter used by score algorithm.
+}
+  \item{thresh}{
+Significance threshold.
+}
+  \item{gnames}{
+A character vector of length two indicating the group names as they should appear in the output. If not used, the group names are obtained from the 'g' argument instead.
+}
+  \item{noob}{
+If this argument is set to TRUE then a simplified version of the output is printed.
+}
+  \item{thetas}{
+Internal parameter used by score algorithm.
+}
+  \item{debug}{
+Debug flag. Not necessary for normal use.
+}
 }
 \details{
-  ~~ If necessary, more details than the description above ~~
+This test divides the observed difference in survival fractions at each quantile (of the combined dataset) by the estimated standard error under the null hyopthesis. The resulting table indicates whether one group or the other is overrepresented in each quantile beyond a level that would be expected by random chance.
 }
 \value{
-  ~Describe the value returned
-  If it is a LIST, use
-  \item{comp1 }{Description of 'comp1'}
-  \item{comp2 }{Description of 'comp2'}
-  ...
+Returns a data.frame with quantiles as the row names and the following columns:
+\item{age}{
+Age at the given quantile.
 }
-\references{ ~put references to the literature/web site here ~ }
-\author{ ~~who you are~~ }
-\note{ ~~further notes~~ 
+\item{srv.A}{
+Number of surviving animals in group 'A' at the given age (A is substituted with the control group's name).
+}
+\item{srv.A.frc}{
+Fraction of surviving animals in group 'A' at the given age (A is substituted with the control group's name).
+}
+\item{srv.B}{
+Number of surviving animals in group 'B' at the given age (B is substituted with the experimental group's name).
+}
+\item{srv.B.frc}{
+Fraction of surviving animals in group 'B' at the given age (B is substituted with the experimental group's name).
+}
+\item{survtotal.frc}{
+Fraction of total surviving animals.
+}
+\item{zp}{
+Score test statistic.
+}
+\item{p}{
+Significance level.
+}
+\item{sig}{
+Indicator of significance.
+}
+}
+\references{
+Wang,C., Li,Q., Redden,D.T., Weindruch,R., Allison,D.B. (2004). Statistical methods for testing effects on "maximal lifespan". Mechanisms of Ageing and Development 125, 629-632
 
- ~Make other sections like Warning with \section{Warning }{....} ~
+Mehotra,D.V., Chan,I.S.F., Berger,R.L. (2003). A cautionary note on exact unconditional inference for a difference between two independent binomial proportions. Biometrics 59, 441-450
 }
-\seealso{ ~~objects to See Also as \code{\link{help}}, ~~~ }
+\author{
+Alex F. Bokov
+}
+
+\seealso{
+\code{link{survgui}}
+}
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
-	      gnames=NULL,noob=F,thetas=c(.05,.95),debug=F){
-	tstart<-proc.time()[3];
-	if(is.null(d2)){
-		groups<-levels(as.factor(g));
-		d1<-subset(d,g==groups[1]);
-		d2<-subset(d,g==groups[2]);
-	} else { d1<-d; d<-c(d1,d2); if(is.null(g)){groups<-c('a','b');}else{groups<-g;}}
-	#mintheta<-min(1/d1,1/d2);
-	n1<-length(d1); n2<-length(d2); n<-n1+n2;
-	output<-c(); q<-quantile(d,quant);
-	if(debug) cat("\nRunning zptest on x1 and x2.");
-	x1<-x2<-c();
-	for(i in q){x1<-c(x1,sum(d1>i)); x2<-c(x2,sum(d2>i));}
-	output<-zptest(x1,x2,n1,n2,n);
-	output<-cbind(q,output);
-	if(is.null(gnames)){g1<-groups[1];g2<-groups[2];}
-	else{g1<-gnames[1];g2<-gnames[2];}
-	surv1<-paste("srv",g1,sep='.');
-	surv2<-paste("srv",g2,sep='.');
-	surv1n1<-paste("srv",g1,"frc",sep='.');
-	surv2n2<-paste("srv",g2,"frc",sep='.');
-	colnames(output)<-c('age',surv1,surv1n1,surv2,surv2n2,'survtotal.frc','zp');
-	output<-data.frame(output);
-	output$zp[is.nan(output$zp)]<-9999; #print(output$zp);
-
-	p<-zptests<-c();
-	if(debug) cat("\nRunning zptest on k n1\'s and n2\'s.");
-	zptests<-outer(0:n1,0:n2,FUN="zptest",n1=n1,n2=n2,n=n,zponly=T);
-	zptests[is.nan(zptests)]<-9999;
-
-	for(i in 1:dim(output)[1]){
-		sup<-c(); cat('.');
-		keep<-abs(zptests)>abs(output$zp[i]);
-		for(j in seq(thetas[1],thetas[2],step)){
-			if(debug) cat("\nRunning zpprob on n1\'s and n2\'s.");
-			zptemp<-outer(0:n1,0:n2,FUN="zpprob",n1=n1,n2=n2,th=j);
-			sup<-c(sup,sum(zptemp[keep]));
-		}
-		p<-c(p,max(sup));
-	}
-	sig<-p<thresh; sig[sig==T]<-"*"; sig[sig==F]<-"";
-	output<-cbind(output,p,sig);
-	rownames(output)<-quant;
-	if(noob){output<-output[,c(1:5,8,9)];}
-	print(proc.time()[3]-tstart);
-	output;
-  }
+data(demo1);
+data(demo2);
+demo1<-sample(demo1,20);
+demo2<-sample(demo2,25);
+test1<-ezz(demo1,demo2,c('control','experimental'));
+test1;
+test2<-ezz(demo1,demo2,c('control','experimental'),quant=seq(0.05,0.95,0.05));
+test2;
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{ survival }

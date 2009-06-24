@@ -92,6 +92,4 @@ Wang, C. et al., (2004) Statistical Methods for Testing Effects on "Maximum Life
 # output<-go(a,b,xynames=c('a','b'));
 # output$go();
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{ survival }

@@ -14,18 +14,17 @@ More about what it does (maybe more than one line)
 \tabular{ll}{
 Package: \tab survomatic\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2008-09-09\cr
+Version: \tab 1.2.4\cr
+Date: \tab 2009-06-23\cr
 License: \tab LGPL?\cr
 LazyLoad: \tab yes\cr
 }
 ~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
-Who wrote it
+Alex F. Bokov
 
-Maintainer: Who to complain to <yourfault@somewhere.net>
-~~ The author and/or maintainer of the package ~~
+Maintainer: bokov@uthscsa.edu
 }
 \references{
 ~~ Literature or other references for background information ~~
