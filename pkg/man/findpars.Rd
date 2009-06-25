@@ -8,7 +8,7 @@ Fit and compare mortality models.
 Fit and compare all supported models to a dataset evaluate the likelihood of a parameter differing between two datasets. Instead of using 'reasonable' starting values, this function takes advantage of the fact that many mortality models are nested in each other and all are ultimately nested in the exponential model whose sole parameter can be calculated directly. Each successively more complex model uses the parameters fitted to the model it is nested in as starting values.
 }
 \usage{
-findpars(x, y = NULL, nil = 0, bnil = 0, pf = mean, labels = NULL, summary = F, id = 0, tlog = F, digits = 22, sig = 0.05, models = NULL)
+findpars(x, y = NULL, cx = NULL, cy = NULL, nil = 0, bnil = 0, wbnil = 1, pf = mean, label = NULL, summary = F, id = 0, tlog = F, digits = 22, sig = 0.05, models = NULL)
 }
 \arguments{
   \item{x}{
@@ -22,6 +22,9 @@ A starting numeric value for a newly added parameter. For example, the Logistic 
 }
   \item{bnil}{
 Like nil, but bnil only gets substituted into the b parameter.
+}
+  \item{wbnil}{
+The numeric value to substitute for missing values of the 'b' parameter when finding parameters for the Weibull model. Defaults to 1.
 }
   \item{pf}{
 A function to call when two different parameters are constrained and need to produce a single starting value. In addition to \code{mean} (default), other valid functions include \code{median}, \code{gmean}, \code{max}, and \code{min}.

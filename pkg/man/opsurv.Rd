@@ -8,7 +8,7 @@ Optimization function for finding the set of parameters that return the largest 
 This function takes one or two datasets, starting parameters, constraints, and various other user settings and formats them in a manner that can be repeatedly sent to the \code{\link{optim}} function until the MLE stops improving.
 }
 \usage{
-opsurv(x, y = NULL, model = "g", par = c(2.6e-06, 0.004, 1e-07, 0.1), cons = 1, usegr = F, usehs = F, debug = F, lb = c(1e-14, 1e-04, 0, 0), ub = c(0.5, 0.5, 0.5, 2), called = NULL, cx = NULL, cy = NULL, mvers = "", method = "Nelder-Mead", minout = -Inf, tlog = F, ...)
+opsurv(x, y = NULL, model = "g", par = c(2.6e-06, 0.004, 1e-07, 0.1), cons = 1, usegr = F, usehs = F, debug = F, lb = c(1e-14, 1e-04, 0, 0), ub = c(0.5, 0.5, 0.5, 2), cx = NULL, cy = NULL, mvers = "", method = "Nelder-Mead", tlog = F, ...)
 }
 \arguments{
   \item{x}{
@@ -65,7 +65,7 @@ A list, with the following items:
 \item{estimate}{The set of parameters that gives the best MLE. Only the parameters used by the model you chose are returned. If a parameter is constrained, it is omitted from the first group, so where an unconstrained model would have N parameters shown here, a model with one constraint will have N-1. }
 \item{maximum}{Maximum likelihood estimate (MLE).}
 \item{iterations}{The number of times the Nelder-Mead optimimization algorithm had to run on the final iteration before it converged.}
-\item{code}{Integer code, where '0' indicates successful convergence and anything else is an error state. For more information, see the documentation for \code{\link(optim)}.}
+\item{code}{Integer code, where '0' indicates successful convergence and anything else is an error state. For more information, see the documentation for \code{\link{optim}}.}
 \item{message}{Message returned by \code{\link(optim)}. In the absence of errors should be NULL.}
 \item{gradient}{If usegr is TRUE, the gradient for the selected model, under the selected constraints, using the fitted parameters. }
 \item{titer}{The total number of iterations for all the times the Nelder-Mead optimization had to run (Nelder-Mead is prone to stopping prematurely, so it is called repeatedly, using the previous estimate as the starting value for the new run, until two successive estimates are the same to the limit of machine precision).}

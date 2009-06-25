@@ -8,7 +8,7 @@ Function to read in and display the log-ratio distributions produced by the func
 This function plots multiple null distributions in the same window, with the actual log-ratio and the chi-squared distribution on the same axes. It also invisibly returns a data.frame for the actual log-ratio comparisons with an empirical p-value column added to it. This function is similar to \code{modelshow} except it works on the output of \code{empdist} to plot log-ratio null distributions for two-group models with a constrained parameter.
 }
 \usage{
-constrshow(d, x = NULL, k = 2, datacol = "LR", idcol = "id", idobs = 1, modelcol = "model", nullmodelcol = "null_model", chicol = "p (chi squared)", figure = T, models = c("ga", "gb"), breaks = 200, lwd = 2, hcol = "black", vcol = "red", chidf = 1, rc = NULL)
+constrshow(d, x = NULL, k = 2, datacol = "LR", idcol = "id", idobs = 1, modelcol = "model", nullmodelcol = "null_model", chicol = "p (chi squared)", figure = T, models = c("wa", "wb", "ga", "gb"), breaks = 200, hcol = "black", vcol = "red", chidf = 1, rc = NULL)
 }
 \arguments{
   \item{d}{
@@ -78,7 +78,7 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{empdist}}
 }
-\Warning{
+\section{Warning}{
 These examples may take 10 minutes or more to finish running.
 }
 \examples{

@@ -1,8 +1,8 @@
 `empdist` <-
-function(x,y,label,nil=0,bnil=0,pf=mean,rounds=5000,type='p',models=NULL){
+function(x,y,label,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,rounds=5000,type='p',models=NULL){
 	d<-int2tab(x,y); lx<-length(x); ly<-length(y); lxy<-lx+ly;
 	if(is.null(models)){
-		models<-c('g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
+		models<-c('w','wa','wb','g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
 		          'lm','lma','lmb','lmc','lms');
 	}
 # 	labels<-list(main=paste(label,'.main.txt',sep=''),
@@ -15,8 +15,8 @@ function(x,y,label,nil=0,bnil=0,pf=mean,rounds=5000,type='p',models=NULL){
 		write.table(m,paste(label,'_perms.txt',sep=''),col.names=F,row.names=F,sep='\t');
 		cat('\nCommencing permutations.\n');
 		for(i in 1:(rounds+1)){
-			findpars(d[m[,i]==0,1],d[m[,i]==1,1],nil=nil,bnil=bnil,models=models,pf=pf,
-				 label=label,id=i-1);
+			findpars(d[m[,i]==0,1],d[m[,i]==1,1],nil=nil,bnil=bnil,wbnil=wbnil,
+				 models=models,pf=pf,label=label,id=i-1,cx=cx,cy=cy);
 		}
 	}
 	if(type=='r'){
@@ -26,8 +26,8 @@ function(x,y,label,nil=0,bnil=0,pf=mean,rounds=5000,type='p',models=NULL){
 		write.table(m,paste(label,'_resam.txt',sep=''),col.names=F,row.names=F,sep='\t');
 		cat('\nCommencing resampling.\n');
 		for(i in 1:(rounds+1)){
-			findpars(m[d[,2]==0,i],m[d[,2]==1,i],nil=nil,bnil=bnil,models=models,pf=pf,
-				 label=label,id=i-1);
+			findpars(m[d[,2]==0,i],m[d[,2]==1,i],nil=nil,bnil=bnil,wbnil=wbnil,
+				 models=models,pf=pf,label=label,id=i-1,cx=cx,cy=cy);
 		}
 	}
 # 	if(type=='b'){

@@ -1,6 +1,6 @@
 `modelshow`<-
 function(label,x=NULL,reload=F,k=2,datacol='LR',modelcol='model',nullmodelcol='null_model',
-	 chicol='p (chi squared)',figure=T, models=c('g','gm','l','lm'),breaks=200,lwd=2,hcol='black',vcol='red',
+	 chicol='p (chi squared)',figure=T, models=c('w','g','gm','l','lm'),breaks=200,lwd=2,hcol='black',vcol='red',
 	 chidf=1,rc=NULL,namesep='_',fpsuffix='.fp',header=1,sep='\t'){
 	# x is output from findpars; the names of data.frames from which to make histograms
 	# are constructed from x and then looked for in the parent environment

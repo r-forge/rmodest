@@ -8,7 +8,7 @@ Function that uses permutation to obtain empirical null distributions that can i
 This function identifies the best-fit parameters for a pair of samples and an a specified joint model or models, then permutes data points between the samples to obtain empirical null distributions for those models in order to determine whether the respective parameters of the two samples are different from each other. This function can also use resampling with replacement to obtain the distributions of fitted parameters, MLEs, and any other statistic calculated by \code{findpars}.
 }
 \usage{
-empdist(x, y, label, nil = 0, bnil = 0, pf = mean, rounds = 5000, type = "p", models = NULL)
+empdist(x, y, label, cx = NULL, cy = NULL, nil = 0, bnil = 0, wbnil = 1, pf = mean, rounds = 5000, type = "p", models = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,12 +21,20 @@ A second vector of ages at death (integers, usually representing days). In contr
   \item{label}{
 A character string prefix based on which the permutation output files are named. You may specify a file-path in the prefix, but do not specify a file extension. The output file will be saved as 'LABEL.txt' where LABEL is replaced by the value of this argument. The permuted/resampled data will likewise be saved as either 'LABEL_perms.txt' or 'LABEL_resam.txt' depending on whether the \code{type} argument is 'p' (permutation), or 'r' (sampling with replacement). This is a required argument.
 }
+  \item{cx}{
+A vector of ones and zeros, with ones representing a natural death event, and zeros representing a censored event. If omitted, it is assumed that all the deaths are natural in the control group.
+}
+  \item{cy}{
+A vector of ones and zeros, with ones representing a natural death event, and zeros representing a censored event. If omitted, it is assumed that all the deaths are natural in the experimental group.
+}
   \item{nil}{
 Passed to \code{findpars}, see the help for that function. Normally does not need to be set.
 }
   \item{bnil}{
 Passed to \code{findpars}, see the help for that function. Normally does not need to be set.
 }
+  \item{wbnil}{
+The numeric value to substitute for missing values of the 'b' parameter when finding parameters for the Weibull model. Defaults to 1.
   \item{pf}{
 A function to call when two different parameters are constrained and need to produce a single starting value. In addition to \code{mean} (default), other valid functions include \code{median}, \code{gmean}, \code{max}, and \code{min}.
 }
@@ -65,7 +73,7 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{constrshow}}
 }
-\Warning{
+\section{Warning}{
 These examples may take 10 minutes or more to finish running.
 }
 \examples{

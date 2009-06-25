@@ -3,10 +3,9 @@ function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,d
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,
 	 mvers='',method="Nelder-Mead",tlog=F,...){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
-	if(!exists("rm.debug")){rm.debug<<-list(0);} 
 	call<-sys.call();
 	switch(model,
-		w={np<-2;ex<-"ofw";hs<-NULL;keep<-c(1,2,5,6);lb=c(1e-14,1e-4,0,0);ub=c(.5,10,0,0);},
+		w={np<-2;ex<-"ofw";hs<-NULL;keep<-c(1,2,5,6);ub=c(.5,10,0,0);},
 		g={np<-2;ex<-paste("ofg",mvers,sep='');hs<-hsg;keep<-c(1,2,5,6);},
 		gm={np<-3;ex<-paste("ofgm",mvers,sep='');hs<-hsgm;keep<-c(1:3,5:7);},
 		l={np<-3;ex<-paste("ofl",mvers,sep='');hs<-hsl;keep<-c(1,2,4,5,6,8);},
@@ -43,6 +42,8 @@ specified is an NA or NaN. Here are the parameters:\n",
 	paste(par,collapse=' '),
 	"\nPlease specify a different set of parameters or just omit them 
 and use the defaults.");}
+# 		browser();
+		lb<-lb[keep[1:np]]; ub<-ub[keep[1:np]] 
 		lb<-fixpar(lb,np,keep);ub<-fixpar(ub,np,keep); 
 		if(tlog){par<-log(par);}
 		rm.temp$lb<<-lb;rm.temp$ub<<-ub;

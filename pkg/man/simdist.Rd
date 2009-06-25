@@ -8,21 +8,29 @@ Function that uses models fitted to the original data to obtain simulated null d
 This function identifies the best-fit parameters for a sample, then uses these parameters to obtain null distributions of MLE log-ratios by sampling from the population that this sample would represent if each candidate model were, in turn, correct.
 }
 \usage{
-simdist(x, label, nil = 6e-10, bnil = 0.005, pf = mean, rounds = 50000, models = c("g", "gm", "l", "lm"), dropcols = c("a2", "b2", "c2", "s2"), cx=NULL, sims = NULL, pars = NULL)
+simdist(x, label, cx = NULL, nil = 0, bnil = 0, wbnil = 1, pf = mean, rounds = 5000, models = c("g", "gm", "l", "lm"), dropcols = c("a2", "b2", "c2", "s2"), cx=NULL, sims = NULL, pars = NULL)
 }
 \arguments{
   \item{x}{
 An integer vector of ages at death.
 }
   \item{label}{
-A character string representing the base name for the output files. Each output file has the same format as the output from \code{\link(findpars)}, stacked together by rows, representing every simulation. There is a separate such output file for each model selected (in the \code{models} argument) and its name is 'LABEL_M' where 'LABEL' is the value of this argument and 'M' is the abbreviation of the model name ('w','g','gm','l', or 'lm').
+A character string representing the base name for the output files. Each output file has the same format as the output from \code{\link{findpars}}, stacked together by rows, representing every simulation. There is a separate such output file for each model selected (in the \code{models} argument) and its name is 'LABEL_M' where 'LABEL' is the value of this argument and 'M' is the abbreviation of the model name ('w','g','gm','l', or 'lm').
+}
+  \item{cx}{
+A vector of ones and zeros, with ones representing a natural death event, and zeros representing a censored event. If omitted, it is assumed that all the deaths are natural in the control group.
 }
   \item{nil}{
-The numeric value to substitute in for very small values of fitted parameters in order to avoid rounding errors caused by machine precision limits. That problem has since been solved and this argument may be removed in future versions.
+The numeric value to substitute missing values of fitted parameters in order to avoid rounding errors caused by machine precision limits. That problem has since been solved and this argument may be removed in future versions.
 }
   \item{bnil}{
-The numeric value to substitute in for very small values of the 'b' parameter in order to avoid rounding errors caused by machine precision limits. That problem has since been solved and this argument may be removed in future versions.
+The numeric value to substitute for missing values of the 'b' parameter in order to avoid rounding errors caused by machine precision limits. That problem has since been solved and this argument may be removed in future versions.
 }
+  \item{wbnil}{
+The numeric value to substitute for missing values of the 'b' parameter when finding parameters for the Weibull model. Defaults to 1.
+}
+  \item{pf}{
+A function to call when two different parameters are constrained and need to produce a single starting value. In addition to \code{mean} (default), other valid functions include \code{median}, \code{gmean}, \code{max}, and \code{min}.
   \item{rounds}{
 How many samples to simulate.
 }
@@ -74,7 +82,7 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{modelshow}}
 }
-\Warning{
+\section{Warning}{
 These examples may take 10 minutes or more to finish running.
 }
 \examples{

@@ -1,10 +1,10 @@
 `simdist`<-
-function(x,label,nil=0,bnil=0,rounds=5000,models=c('g','gm','l','lm'),
+function(x,label,cx=NULL,nil=0,bnil=0,wbnil=1,pf=mean,rounds=5000,models=c('w','g','gm','l','lm'),
 	 dropcols=c('a2','b2','c2','s2'),sims=NULL,pars=NULL){
-	ihaz<-findpars(x,nil=nil,bnil=bnil,models=models); 
 	# if sims and pars non-null, should write some kind of validation to make sure they match
 	if(is.null(pars)){pars<-list();}
-	lx<-length(x); 
+	lx<-length(x);
+	ihaz<-findpars(x,cx=cx,nil=nil,bnil=bnil,wbnil=wbnil,models=models); 
 	if(is.null(sims)) {
 		sims<-list();
 		msize<-lx*rounds;
@@ -34,7 +34,9 @@ function(x,label,nil=0,bnil=0,rounds=5000,models=c('g','gm','l','lm'),
 			nm<-.models[[m]]$nests;
 			for(nmi in nm){
 				pairname=paste(nmi,m,sep='');
-				out<-findpars(sims[[nmi]][,i],nil=nil,bnil=bnil,models=m,id=i-1);
+				#if(m=='w'){cat('\n');print(sims[[nmi]][,i]);browser();}
+				out<-findpars(sims[[nmi]][,i],cx=cx,nil=nil,bnil=bnil,wbnil=wbnil,
+					      models=m,id=i-1);
 				out<-out[,setdiff(names(out),dropcols)];
 				out<-cbind(out,null_pars=pars[[pairname]],null_model=nmi,target_model=m);
 				mlabel<-paste(label,m,sep='_');

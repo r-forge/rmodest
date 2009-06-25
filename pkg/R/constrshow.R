@@ -1,6 +1,7 @@
 `constrshow`<-
-function(d,x=NULL,k=2,datacol='LR',idcol='id',idobs=0,modelcol='model',nullmodelcol='null_model',chicol='p (chi squared)',
-	 figure=T,models=c('ga','gb'),breaks=200,hcol='black',vcol='red',chidf=1,rc=NULL){
+function(d,x=NULL,k=2,datacol='LR',idcol='id',idobs=1,modelcol='model',nullmodelcol='null_model',
+	 chicol='p (chi squared)',figure=T,models=c('wa','wb','ga','gb'),breaks=200,hcol='black',
+	 vcol='red',chidf=1,rc=NULL){
 	if(is.null(x)){x<-d[d[[idcol]]==idobs,];}; if(is.null(rc)){rc<-rowcols(length(models));}
 	if(match('emp.p',names(x),nomatch=0)==0){x<-cbind(x,'emp.p'=NA);updatex=T;}
 	close.screen(all=T); scrs<-split.screen(rc);
