@@ -1,7 +1,7 @@
 `opsurv` <-
 function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,
-# 	 mvers='',method="Nelder-Mead",tlog=F){
+ 	 mvers='',method="Nelder-Mead",tlog=F){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	call<-sys.call();
 	switch(model,
