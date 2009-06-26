@@ -8,7 +8,7 @@ Function that uses models fitted to the original data to obtain simulated null d
 This function identifies the best-fit parameters for a sample, then uses these parameters to obtain null distributions of MLE log-ratios by sampling from the population that this sample would represent if each candidate model were, in turn, correct.
 }
 \usage{
-simdist(x, label, cx = NULL, nil = 0, bnil = 0, wbnil = 1, pf = mean, rounds = 5000, models = c("g", "gm", "l", "lm"), dropcols = c("a2", "b2", "c2", "s2"), cx=NULL, sims = NULL, pars = NULL)
+simdist(x, label, cx = NULL, nil = 0, bnil = 0, wbnil = 1, pf = mean, rounds = 5000, models = c("w", "g", "gm", "l", "lm"), dropcols = c("a2", "b2", "c2", "s2"), sims = NULL, pars = NULL)
 }
 \arguments{
   \item{x}{
@@ -31,6 +31,7 @@ The numeric value to substitute for missing values of the 'b' parameter when fin
 }
   \item{pf}{
 A function to call when two different parameters are constrained and need to produce a single starting value. In addition to \code{mean} (default), other valid functions include \code{median}, \code{gmean}, \code{max}, and \code{min}.
+}
   \item{rounds}{
 How many samples to simulate.
 }
@@ -39,9 +40,6 @@ A character vector of models to try which can be any combination of: 'w','g','gm
 }
   \item{dropcols}{
 Columns to drop from the output. By default this is \code{c('a2','b2','c2','s2')} because \code{simdist} is designed for just one sample rather than a comparison of two samples, and therefore those columns will never be used by this function. The name of any unwanted output columns can be included in this argument however.
-}
-  \item{cx}{
-An integer vector composed of 1s and 0s, the same length as \code{x}. A 1 indicates that the corresponding age at death in \code{x} is a natural death and should be counted while a 0 indicates that death is artifactual, the animal was still alive at the time of data collection, or any other circumstance that would require that data point to be censored.
 }
   \item{sims}{
 Simulating samples is a time consuming process. If the simulations from a previous run exist as an R object in the current environment, that object can be specified in the \code{sims} argument, causing the simulation step to be bypassed and all the simulated data to instead be taken from the object.

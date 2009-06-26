@@ -85,7 +85,7 @@ Alex F. Bokov
 }
 
 \seealso{
-\code{link{survgui}}
+\code{\link{survgui}}
 }
 \examples{
 data(demo1);

@@ -17,6 +17,12 @@ A vector of ages at death (integers, usually representing days).
   \item{y}{
 An optional second vector of ages at death (integers, usually representing days).
 }
+  \item{cx}{
+A vector of ones and zeros, with ones representing a natural death event, and zeros representing a censored event. If omitted, it is assumed that all the deaths are natural in the control group.
+}
+  \item{cy}{
+A vector of ones and zeros, with ones representing a natural death event, and zeros representing a censored event. If omitted, it is assumed that all the deaths are natural in the experimental group.
+}
   \item{nil}{
 A starting numeric value for a newly added parameter. For example, the Logistic model uses the best-fit parameters for the Gompertz model as its starting values, but the Gompertz model has two parameters while the Logistic model has three. The third parameter takes on the value of the nil argument.
 }

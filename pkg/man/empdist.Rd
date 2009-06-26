@@ -35,6 +35,7 @@ Passed to \code{findpars}, see the help for that function. Normally does not nee
 }
   \item{wbnil}{
 The numeric value to substitute for missing values of the 'b' parameter when finding parameters for the Weibull model. Defaults to 1.
+}
   \item{pf}{
 A function to call when two different parameters are constrained and need to produce a single starting value. In addition to \code{mean} (default), other valid functions include \code{median}, \code{gmean}, \code{max}, and \code{min}.
 }

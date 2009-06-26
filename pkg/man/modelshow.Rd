@@ -8,7 +8,7 @@ Function to read in and display the log-ratio distributions produced by the func
 This function plots multiple null distributions in the same window, with the actual log-ratio and the chi-squared distribution on the same axes. It also invisibly returns a data.frame for the actual log-ratio comparisons with an empirical p-value column added to it. This function is similar to \code{constrshow} except it works on the output of \code{simdist} to plot log-ratio null distributions for one-group unconstrained models.
 }
 \usage{
-modelshow(label, x = NULL, reload = F, k = 2, datacol = "LR", modelcol = "model", nullmodelcol = "null_model", chicol = "p (chi squared)", figure = T, models = c("w", "g", "gm", "l", "lm"), breaks = 200, lwd = 2, hcol = "black", vcol = "red", chidf = 1, rc = NULL, namesep = "_", fpsuffix = ".fp", header = 1, sep = "\t")
+modelshow(label, x = NULL, reload = F, k = 2, datacol = "LR", modelcol = "model", nullmodelcol = "null_model", chicol = "p (chi squared)", figure = T, models = c("w", "g", "gm", "l", "lm"), breaks = 200, hcol = "black", vcol = "red", chidf = 1, rc = NULL, namesep = "_", fpsuffix = ".fp", header = 1, sep = "\t")
 }
 \arguments{
   \item{label}{
