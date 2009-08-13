@@ -1,7 +1,7 @@
 Package: Survomatic
 Type: Package
 Title: Analysis of longevity data.
-Version: 1.2.4.5
+Version: 1.2.4.6
 Date: 2009-08-13
 URL: http://rmodest.r-forge.r-project.org/
 Depends: survival, surv2sample, quantreg, SparseM, methods, stats, utils, graphics, grDevices, splines, boot, R (>= 2.6.0)
