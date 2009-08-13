@@ -1,5 +1,5 @@
 `opsurv` <-
-function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
+function(x,y=0,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,
  	 mvers='',method="Nelder-Mead",tlog=F){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
@@ -14,14 +14,14 @@ function(x,y=NULL,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,d
 The only models supported in this version are: 
 g, gm, l, and lm.")
 		);
-	if(mean(cons)==1 & !is.null(y)){
+	if(mean(cons)==1 & sum(y)>0){
 		out<-list();
 		options('warn'= -1);
-		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,cy=cy,mvers=mvers,method=method,tlog=tlog);
-			     if(length(par)==2*np){par1<-par[(np+1):(2*np)];
-			     } else {if(length(par)==8){par1<-par[5:8];
-			     } else par1<-par;}
-		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,cy=cy,mvers=mvers,method=method,tlog=tlog);
+		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,mvers=mvers,method=method,tlog=tlog);
+		if(length(par)==2*np){par1<-par[(np+1):(2*np)];
+		} else {if(length(par)==8){par1<-par[5:8];
+		} else par1<-par;}
+		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cy=cy,mvers=mvers,method=method,tlog=tlog);
 		options('warn'=0);
 		out$estimate<-c(out0$estimate,out1$estimate);
 		out$maximum<-sum(out0$maximum,out1$maximum);
@@ -35,6 +35,7 @@ g, gm, l, and lm.")
 	} else {
 		rm.temp<<-list(cons=checkcons(cons,np,keep),cons2=rep(cons,le=4),x=x,y=y,
 				keep=keep[1:np],debug=debug,np=np);
+		#browser();
 		par<-fixpar(par,np,keep);
 		if(sum(is.na(par)>0)){
 		stop("At least one of the starting parameters (par) you 
@@ -42,13 +43,15 @@ specified is an NA or NaN. Here are the parameters:\n",
 	paste(par,collapse=' '),
 	"\nPlease specify a different set of parameters or just omit them 
 and use the defaults.");}
-# 		browser();
+#  		#browser();
 		lb<-lb[keep[1:np]]; ub<-ub[keep[1:np]] 
 		lb<-fixpar(lb,np,keep);ub<-fixpar(ub,np,keep); 
 		if(tlog){par<-log(par);}
 		rm.temp$lb<<-lb;rm.temp$ub<<-ub;
-		nx<-length(x);ny<-length(y);if(is.null(cx)){cx<-rep(1,nx);}
-		if(is.null(cy)){if(is.null(y)){cy<-1;} else {cy<-rep(1,ny);}}
+		nx<-length(x);ny<-length(y);
+		if(is.null(cx)){cx<-rep(1,nx);}; if(is.null(cy)){cy<-rep(1,ny);}
+		if(sum(y)==0){cy<-rep(1,ny);y<-NULL;par<-par[1:np];}
+# 		if(is.null(cy)){if(sum(y)>0){cy<-1;} else {cy<-rep(1,ny);}}
 		fn<-function(par){
 			objf(par,lb=lb,ub=ub,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],ex=ex,nx=nx,ny=ny,cx=cx,cy=cy,tlog=tlog);
 		}
@@ -63,6 +66,7 @@ and use the defaults.");}
 			cat(".");
 			options(show.error.messages=F);
 			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)))
+			#cat('cx:',cx,'\n','cy:',cy,'\n');
 			options(show.error.messages=T);
 			if(class(out)[1]!="try-error"){
 				totaliter<-out[[3]][1]+totaliter;
@@ -71,22 +75,26 @@ and use the defaults.");}
 				p<-out.old[[1]]; lk<-NA;
 				# Bad starting params, huh? We'll see about that.
 				while(is.na(lk)|is.infinite(lk)){
-				if(tlog){p[is.infinite(p)]<- 0; p<-(p-5)/2;
-					if(max(p-log(lb))<1e-10){
-						cat('X\n');print(p);print(exp(lb));
-						print(lb);break();
+					if(tlog){p[is.infinite(p)]<- 0; p<-(p-5)/2;
+						if(max(p-log(lb))<1e-10){
+							cat('X\n');print(p);print(exp(lb));
+							print(lb);break();
+						}
+					}else{
+						p<-p/2; lbp<-p>lb;
+						p<-p*lbp+1.1*lb*(1-lbp);
+						if(max(p>1.1*lb)==0){
+							cat('X\n');print(p);
+							break();
+						}
 					}
-				}else{
-					p<-p/2; lbp<-p>lb;
-					p<-p*lbp+1.1*lb*(1-lbp);
-					if(max(p>1.1*lb)==0){cat('X\n');print(p);break();}
-				}
-				if(is.null(y)){maxy<-NULL;} else {maxy<-max(y);}
-				lk<-objf(p,lb=lb,ub=ub,cons=rep(cons,le=4),
-					 x=max(x),y=maxy,np=np,keep=keep[1:np],ex=ex,nx=1,ny=1,cx=1,cy=1,
-					 tlog=tlog);
-				# Damn starting params! You have bested me, I surrender.
-				cat('!');
+					if(sum(y)==0){maxy<-NULL;} else {maxy<-max(y);}
+					lk<-objf(p,lb=lb,ub=ub,cons=rep(cons,le=4),
+						 x=max(x),y=maxy,np=np,
+						 keep=keep[1:np],ex=ex,nx=1,ny=1,cx=1,cy=1,
+						 tlog=tlog);
+					# Damn starting params! You have bested me, I surrender.
+					cat('!');
 				}
 				if(!is.na(lk)){out<-list(p);change<-1;} else {break;}
 			} 

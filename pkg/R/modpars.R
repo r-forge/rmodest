@@ -14,7 +14,7 @@ either as a single boolean value or a vector
 of four boolean values. Please fix your input
 and try again.');}
 	keepi<-keepi[c(rep(T,4),!cni)[keepi]];
-	if(length(x)!=length(keepi)){
+	if(length(x)!=length(keepi) & length(x)!=2*length(keepi)){
 		print('Mismatch between model and parameter length.');traceback();browser();
 	}
 	# Here we convert the unique-values-only parameter vector into standard form

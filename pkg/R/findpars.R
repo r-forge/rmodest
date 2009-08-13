@@ -35,6 +35,7 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 		# it should be identical to the exponential model
 		parw<-partemp; parw[c(2,4)]<-wbnil;
 		es.w<-opsurv(x,y,'w',par=parw,tlog=tlog,ub=c(.5,10,.5,10),cx=cx,cy=cy);
+		#browser();
 		if(match('wa',models,nomatch=0)){
 			es.wa<-opsurv(x,y,'w',cons=c(F,T,T,T),cx=cx,cy=cy,
 				par=modpars(es.w$estimate,'w',cno=c(F,T,T,T),
@@ -109,6 +110,7 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.gmc$estimate<-rep.int(-Inf,5);}
 		if(sum(c('lm','lma','lmb','lmc','lms') %in% models)>0){
+			#print('112');browser();
 			es.gmlm<-opsurv(x,y,'lm',cx=cx,cy=cy,
 					par=modpars(es.gm$estimate,'gm','lm',nil=nil,trim=T,
 						    onegrp=onegrp),lb=c(1e-14,0,0,0),tlog=tlog);
@@ -171,20 +173,20 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lmb$estimate<-rep.int(-Inf,7);}
 		if(match('lmc',models,nomatch=0)){
-			es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),
+			es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),cx=cx,cy=cy,
 				par=modpars(es.lm$estimate,'lm',cno=c(T,T,F,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lmc$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
 					par=modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lmc$estimate<-rep.int(-Inf,7);}
 		if(match('lms',models,nomatch=0)){
-			es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),
+			es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),cx=cx,cy=cy,
 				par=modpars(es.lm$estimate,'lm',cno=c(T,T,T,F),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lms$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
 					par=modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lms$estimate<-rep.int(-Inf,7);}
