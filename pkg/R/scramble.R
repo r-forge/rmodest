@@ -17,7 +17,8 @@ function(x,n,which='smallest'){
 
 `spyhaz`<-
 function(label,path='./',extramain=0){
-	main<-paste(label,'main',sep='.');
+	#main<-paste(label,'main',sep='.');
+	main<-label;
 	gml<-paste(label,'gml',sep='.');
 	unc<-paste(label,'unc',sep='.');
 	gmlcols<-maincols<-c("max", "iters", "rt", "a1", "b1", "c1", "s1", "a2", "b2", "c2",
@@ -65,7 +66,7 @@ function(perms,pars1=c('a1','b1','c1','s1'),pars2=c('a2','b2','c2','s2'),cex=.75
 }
 
 `plotestdens`<-
-function(perms,fits=c('g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
+function(perms,fits=c('w','wa','wb','g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls',
 		      'lm','lma','lmb','lmc','lms'),
 	 par1='a1',par2='a2',log=F,ymax=0.02){
 	if(length(grep('c',c(par1,par2)))>0){fits<-fits[grep('m',fits)];} else {
@@ -471,14 +472,6 @@ function(x,y,labels=c(0,1)){cbind(c(x,y),c(rep(labels[1],length(x)),rep(labels[2
 function(x,y,labels=c(0L,1L))
 	{cbind(as.integer(c(x,y)),c(rep(labels[1],length(x)),rep(labels[2],length(y))));}
 
-`plotsurv`<-
-function(x,y,cx=NULL,cy=NULL,col=c(1,'darkred'),lwd=2,legend=NULL,lloc='bottomleft',...){
-	lx<-length(x);ly<-length(y);
-	if(is.null(cx)){cx<-rep(1,lx);}; if(is.null(cy)){cy<-rep(1,ly);};
-	plot(survfit(Surv(c(x,y),event=c(cx,cy))~c(rep(0,lx),rep(1,ly))),col=col,lwd=lwd,...);
-	if(!is.null(legend)){legend(x=lloc,col=col,lwd=lwd,legend=legend);}
-}
-
 # this is to pull out just the significant model and parameters from the output of findpars
 `hztblsumm`<-
 function(x,fcols=c('MLE','a1','b1','c1','s1','a2','b2','c2','s2','model','LR','p (chi squared)'),
@@ -507,3 +500,10 @@ function(x,fcols=c('MLE','a1','b1','c1','s1','a2','b2','c2','s2','model','LR','p
 	out[out[,pcol]>.05,'sig']<-'*'; attr(out,'n.models')<-n.models;
 	return(out);
 }
+
+exdens<-function(t,a){exp(-t/a)/a}
+wdens<-function(t,a,b){exp((b-1)*log(t)+(a^b)*(-t^b)+log(b)+log(a)*b)}
+gdens<-function(t,a,b){a*exp(b*t-a*(exp(b*t)-1)/b)}
+gmdens<-function(t,a,b,c){(c+a*exp(b*t))*exp(-a*(exp(b*t)-1)/b -c*t)}
+ldens<-function(t,a,b,s){a*exp(b*t)*(1+s*a*(exp(b*t)-1)/b)^(-(s+1)/s)}
+lmdens<-function(t,a,b,c,s){(c+a*exp(b*t)/(1+s*a*(exp(b*t)-1)/b))*(exp(-c*t)*(1+s*a*(exp(b*t)-1)/b)^(-(s+1)/s))}

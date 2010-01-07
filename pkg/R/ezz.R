@@ -1,14 +1,18 @@
 `ezz` <-
-function(d,d2=NULL,g,quant=.9,step=.01,thresh=.05,
+function(d,d2=NULL,g,c1=NULL,c2=NULL,quant=.9,step=.01,thresh=.05,
 	      gnames=NULL,noob=F,thetas=c(.05,.95),debug=F){
 	tstart<-proc.time()[3];
 	if(is.null(d2)){
 		groups<-levels(as.factor(g));
-		d1<-subset(d,g==groups[1]);
-		d2<-subset(d,g==groups[2]);
-	} else { d1<-d; d<-c(d1,d2); if(is.null(g)){groups<-c('a','b');}else{groups<-g;}}
+		d1<-subset(d,g==groups[1])[,1];
+		d2<-subset(d,g==groups[2])[,1];
+	} else { d1<-d; d<-c(d1,d2);
+	if(is.null(g)){groups<-c('a','b');} else {groups<-g;}}
 	#mintheta<-min(1/d1,1/d2);
 	n1<-length(d1); n2<-length(d2); n<-n1+n2;
+	if(is.null(c1)){c1<-rep(T,n1)} else {c1<-as.logical(c1)}; 
+	if(is.null(c2)){c2<-rep(T,n2)} else {c2<-as.logical(c2)};
+	d1<-d1[c1]; d2<-d2[c2];
 	output<-c(); q<-quantile(d,quant);
 	if(debug) cat("\nRunning zptest on x1 and x2.");
 	x1<-x2<-c();

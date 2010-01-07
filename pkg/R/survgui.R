@@ -1,10 +1,13 @@
 `survgui`<-
-function(dat=NULL){
+function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),deparse(substitute(ytab)))){
 	# make sure the environment can support this GUI
+	xynames<-as.character(xynames);
 	require(tcltk);
 	tclRequire('Tktable');
 	# declare a bunch of tcl variables for later use
 	a<-tktoplevel(); n<-1000;
+	if(is.vector(xtab)){xtab<-data.frame(time=xtab,censor=1);}
+	if(is.vector(ytab)){ytab<-data.frame(time=ytab,censor=1);}
 	frame1<-tkframe(a,pady=5,padx=5);
 	frame2<-tkframe(a);frame3<-tkframe(a);frame4<-tkframe(frame2);
 	ar10<-tkfont.create(family='arial',size=10); ar8<-tkfont.create(family='arial',size=8);
@@ -29,7 +32,11 @@ function(dat=NULL){
 			}
 			load(filename); objcount<-0;
 			if(dev.cur()>1){dev.off(dev.cur());}
-			if(exists('xtab')&exists('ytab')){
+			# this used to test for existance but since xtab and ytab
+			# have been added as parameters defaulting to null, this
+			# now tests for nullness
+			if((is.matrix(xtab)|is.data.frame(xtab)) &
+			   (is.matrix(ytab)|is.data.frame(ytab))){
 				array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
 				array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
 				tkconfigure(plSurvBut,state='active')
@@ -120,18 +127,18 @@ function(dat=NULL){
 		sdx<-sd(x); sdy<-sd(y); mx<-mean(x); my<-mean(y); 
 		qx<-round(quantile(xtab[,1],c(.5,.9)),0); qy<-round(quantile(ytab[,1],c(.5,.9)),0);
 		qcix<-qci(xtab[,1],c(.5,.9)); qciy<-qci(ytab[,1],c(.5,.9));
-		xyt<-t.test(log(x[x>0]),log(y[y>0]));
+		#xyt<-t.test(log(x[x>0]),log(y[y>0]));
 		xytab<-rbind(cbind(xtab,group=1),cbind(ytab,group=2));
 		xylr<-surv2.logrank(Surv(xytab[,1],event=xytab[,2]),xytab[,3]);
 		summ.out<-data.frame(NA,lx,NA,NA,ly,NA,NA);
 		colnames(summ.out)<-c(paste(xynames[1],'lci'),xynames[1],paste(xynames[1],'uci'),
 				      paste(xynames[2],'lci'),xynames[2],paste(xynames[2],'uci'),'p');
 		rownames(summ.out)<-'n';
-		summ.out<-rbind(summ.out,mean=c(sdx,mx,sdx,sdy,my,sdy,xyt$p.value));
+		summ.out<-rbind(summ.out,mean=c(mx-sdx,mx,mx+sdx,my-sdy,my,my+sdy,NA));
 		summ.out<-rbind(summ.out,median=c(qcix[1,1],qx[1],qcix[1,2],qciy[1,1],qy[1],qciy[1,2],
 				NA)); #if qreg.out exists, get p from there
-		summ.out<-rbind(summ.out,`90th percentile`=c(qcix[1,1],qx[1],qcix[1,2],
-				qciy[1,1],qy[1],qciy[1,2],
+		summ.out<-rbind(summ.out,`90th percentile`=c(qcix[2,1],qx[2],qcix[2,2],
+				qciy[2,1],qy[2],qciy[2,2],
 				NA)); #if qreg.out exists, get p from there
 		if(exists('scor.out')){
 			summ.out['median','p']<-scor.out['0.5','p'];
@@ -149,7 +156,7 @@ function(dat=NULL){
 	doScorFunc<-function(){
 		tkconfigure(a,cursor='watch');
 		doGeneralFunc();
-		assign('scor.out',ezz(x,y,xynames,quant=seq(0,.95,.05)),env=penv);
+		assign('scor.out',ezz(xtab[,1],ytab[,1],xynames,xtab[,2],ytab[,2],quant=seq(0,.95,.05)),env=penv);
 		prScorFunc();
 		tkconfigure(svScorBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(svAllBut,state='normal',foreground='blue',activeforeground='blue');
@@ -211,7 +218,9 @@ function(dat=NULL){
 		doGeneralFunc();
 		plot(qreg.sum,parm=2,ols=F,ylim=c(-1,1),main=paste(tmain,"Quantile Regression"));
 		qreg.sig<-na.exclude(qreg.out[qreg.out[,5]<.05,]);
-		points(qreg.sig[,1],qreg.sig[,2],col='red',lwd=3);
+		#points(qreg.sig[,1],qreg.sig[,2],col='red',lwd=3);
+		#below version looks better in grayscale 
+		points(qreg.sig[,1],qreg.sig[,2],col='black',lwd=2,pch=3);
 		tkconfigure(svplSurvBut,state='disabled');
 		tkconfigure(svplQregBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(a,cursor='');
@@ -419,6 +428,15 @@ function(dat=NULL){
 	vard1[[0,0]]<-'Age at Death'; vard1[[0,1]]<-'Censor';
 	vard2[[0,0]]<-'Age at Death'; vard2[[0,1]]<-'Censor';
 	for(i in 1:n){vard1[[i,0]]<-'-';vard1[[i,1]]<-1;vard2[[i,0]]<-'-';vard2[[i,1]]<-1;}
+
+	# if data passed as r objects from environment
+	if(!is.null(xtab)&!is.null(ytab)){
+		array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
+		array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
+		tkconfigure(plSurvBut,state='active');
+		tcl("set","name1",xynames[1]); tcl("set","name2",xynames[2]);
+	}
+
 	# frame2 variables
 	tcl("set","save",1);tcl("set","path",getwd());tcl("set","tscor",1); 
 	tcl("set","tqreg",1);tcl("set","tmort",1);tcl("set","tsumm",1); 
@@ -478,6 +496,6 @@ function(dat=NULL){
 	tkgrid(frame4,columnspan=4);
 	tkgrid(frame1,frame2,padx=2,pady=2);
 	tkgrid(frame3,columnspan=2,sticky='nwe');
-	browser();
+	#browser();
 	options(width=oldwidth[[1]]);
 }

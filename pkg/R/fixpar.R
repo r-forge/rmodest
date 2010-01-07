@@ -17,7 +17,7 @@ for a single-model fit. Only the first ",np," parameters were used.");
 	if(lp==2*np){return(par[c(rep.int(T,np),cons)]);}
 	if(lp==4){return(fixpar(c(par,par)[keep],np,keep));}
 	if(lp==8){return(fixpar(c(par)[keep],np,keep));}
-	browser();
+	#browser();
 # 	stop("If starting parameters (par) are specified,
 # they should be a numerical vector equal in length either
 # to 4, or 8, or the number of parameters in your model, or
