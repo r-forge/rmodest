@@ -78,18 +78,4 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{empdist}}
 }
-\section{Warning}{
-These examples may take 10 minutes or more to finish running.
-}
-\examples{
-data(demo1);
-data(demo2);
-empdist(demo1,demo2,'test',rounds=100);
-test.in<-read.table(file='test.txt',sep='\t',header=T,check.names=F)
-test.table<-constrshow(test.in);
-test.table[1:10,];
-names(test.table);
-# Invoking constrshow with a different layout and with models explicitly specified.
-constrshow(test.in,models=c('ga','lma','lms'),rc=c(2,2));
-}
 \keyword{ survival }

@@ -87,17 +87,4 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{simdist}}
 }
-\section{Warning}{
-These examples may take 10 minutes or more to finish running.
-}
-\examples{
-data(demo1);
-simdist(demo1,'test',rounds=100);
-modelshow('test');
-test_g[1:10,];
-names(test_g);
-test.fp;
-# Invoking modelshow with a different layout and only a subset of the models.
-modelshow('test',models=c('g','gm','l'),rc=c(2,2));
-}
 \keyword{ survival }

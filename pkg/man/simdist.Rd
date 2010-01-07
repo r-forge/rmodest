@@ -83,10 +83,4 @@ Alex F. Bokov
 \section{Warning}{
 These examples may take 10 minutes or more to finish running.
 }
-\examples{
-data(demo1);
-simdist(demo1,'test',rounds=100);
-test.g<-read.table('test_g',sep='\t',header=1,check.names=F);
-test.g[1:10,];
-}
 \keyword{ survival }

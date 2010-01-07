@@ -87,14 +87,4 @@ Alex F. Bokov
 \seealso{
 \code{\link{survgui}}
 }
-\examples{
-data(demo1);
-data(demo2);
-demo1<-sample(demo1,20);
-demo2<-sample(demo2,25);
-test1<-ezz(demo1,demo2,c('control','experimental'));
-test1;
-test2<-ezz(demo1,demo2,c('control','experimental'),quant=seq(0.05,0.95,0.05));
-test2;
-}
 \keyword{ survival }

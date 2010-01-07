@@ -74,17 +74,4 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, \code{\link{constrshow}}
 }
-\section{Warning}{
-These examples may take 10 minutes or more to finish running.
-}
-\examples{
-data(demo1);
-data(demo2);
-empdist(demo1,demo2,'test',rounds=100);
-empdist(demo1,demo2,'resample_test',type='r',rounds=100);
-test<-read.table('test.txt',header=1,sep='\t',check.names=F);
-test[1:10,];
-resample_test<-read.table('resample_test.txt',header=1,sep='\t',check.names=F);
-resample_test[1:10,];
-}
 \keyword{ survival }

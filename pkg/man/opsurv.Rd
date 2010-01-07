@@ -82,20 +82,4 @@ Alex F. Bokov
 \seealso{
 \code{\link{findpars}}, and \code{\link{objf}}, which is the function that actually evaluates the MLE at each step of the optimization process.
 }
-\examples{
-data(demo1);
-data(demo2);
-out.gompertz.unc<-opsurv(demo1,demo2);
-out.gompertz.a<-opsurv(demo1,demo2,cons=c(0,1));
-out.gompertz.b<-opsurv(demo1,demo2,cons=c(1,0));
-out.gompertz.ab<-opsurv(demo1,demo2,cons=c(0,0));
-out.weibull.unc<-opsurv(demo1,demo2,model='w');
-cat('\n');
-out.gompertz.unc$estimate; out.gompertz.unc$maximum;
-out.gompertz.a$estimate; out.gompertz.a$maximum;
-out.gompertz.b$estimate; out.gompertz.b$maximum;
-out.gompertz.ab$estimate; out.gompertz.ab$maximum;
-out.weibull.unc$estimate; out.weibull.unc$maximum;
-# etc
-}
 \keyword{ survival }

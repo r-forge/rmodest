@@ -93,10 +93,5 @@ Alex F. Bokov
 \seealso{
 \code{\link{opsurv}}, \code{\link{simdist}}, \code{\link{empdist}}
 }
-\examples{
-data(demo1);
-data(demo2);
-out<-findpars(demo1,demo2,summ=T);
-}
 
 \keyword{ survival }

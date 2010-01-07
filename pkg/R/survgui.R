@@ -486,7 +486,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 # 	tkgrid(summchk,sticky='we',columnspan=2);
 # 	tkgrid(runBut,sticky='we',padx=50,pady=2,columnspan=2);
 	tkgrid(dbBut,loadBut,delBut,quitBut,pady=2,padx=5,columnspan=1);
-	tkwm.title(a,'Survomatic v1.2.3');
+	tkwm.title(a,paste('Survomatic v', installed.packages()[installed.packages()[,'Package']=='Survomatic','Version'],sep=''));
 	if(!is.null(dat)){loadFunc(dat);}
 	# arrange widgets in frame3
 	tkgrid(textout,yscr3); tkgrid(xscr); tkgrid.configure(textout,sticky='we');
