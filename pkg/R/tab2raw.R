@@ -1,4 +1,4 @@
-tab2raw<-function(d,output='times',timecol=1,eventcol=2,censcol=3,groupcol=4,choosegroup=0){
+tab2raw<-function(d,output='times',timecol=1,eventcol=2,groupcol=3,censcol=4,choosegroup=0){
 	if(choosegroup){d<-d[d[,groupcol]==choosegroup,];}
 	cens=F;time=F;
 	if(match('times',output,nomatch=F)){tout<-rep(d[,timecol],d[,eventcol]); time=T;}

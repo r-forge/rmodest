@@ -57,7 +57,7 @@ and use the defaults.");}
 		}
 		gr<-function(par){grf(par,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],model=paste("g",model,mvers,sep=''),nx=nx,ny=ny,cx=cx,cy=cy,tlog=tlog);}
 		if(!usegr) gr<-NULL; if(!usehs) hs<-NULL;
-		change<-1; out<-list(par); totaliter<-0;
+		change<-1; out<-list(par); totaliter<-0; ctrl<-getOption('ctrl');
 		ctrl$parscale<-rep.int(1, length(par)); ctrl$ndeps<-rep(0.001, length(par));
 		# is there are reason not to jack up the iterations?
 		ctrl$maxit<-5000;

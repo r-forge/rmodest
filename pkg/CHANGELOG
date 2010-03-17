@@ -1,0 +1,7 @@
+Changelog
+
+100316: version 1.2.4.10. smartpars(), a new wrapper for findpars() that reduces runtime and shows only the output most likely to be of interest. Now the default form in which survgui() prints mortality model fits, but it can be overridden from the command line by setting the smartpars argument to survgui() to FALSE. Fixed default arguments in tab2raw() so that it reads the WinModest format by default. survgui() can now load WinModest files directly. Adjusted the output box on survgui() so that it's tidier, especially for mortality model output. Fixed a few bugs in tidyfits() that were causing blank output when the input table didn't contain any parameter comparisons. Fixed the off-by-one header problem in output exported as tab delimited spreadsheets. NOTE: Until further notice, do NOT trust the quantile regression feature if your data is censored. I will soon integrate censored quantile regression into this package and will announce that when ready. The '?' button in the options dialog plots a list of symbols and the corresponding numeric codes that can be used for plotting survival curves.
+
+100217: tidyfits, new function to trim out rejected constrained and unconstrained models from the output table that findpards produces
+
+100217: ctrl and dex are now placed in the options upon load, so they don't clutter up the environment and risk accidental deletion.

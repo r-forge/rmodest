@@ -1,11 +1,19 @@
 `survgui`<-
-function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),deparse(substitute(ytab)))){
+function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),deparse(substitute(ytab))),surv_percentalive=TRUE,surv_mark=NA,surv_pch=23:24,surv_col=c('black','darkred'),logrank_perms=2000,smartpars=T){
 	# make sure the environment can support this GUI
 	xynames<-as.character(xynames);
 	require(tcltk);
 	tclRequire('Tktable');
+	tcl("set","surv_percentalive",as.numeric(surv_percentalive));
+	# surv_mark is the mark parameter of plot.survfit; if it's NA then censoring will not be printed
+	# otherwise the corresponding pch character will be used
+	tcl("set","surv_mark",ifelse(is.na(surv_mark),'',surv_mark));
+	tcl("set","surv_pch1",ifelse(is.na(surv_pch[1]),'',surv_pch[1]));
+	tcl("set","surv_pch2",ifelse(is.na(surv_pch[2]),'',surv_pch[2]));
+	tcl("set","surv_col1",surv_col[1]);tcl("set","surv_col2",surv_col[2]);
+	tcl("set","logrank_perms",logrank_perms);
 	# declare a bunch of tcl variables for later use
-	a<-tktoplevel(); n<-1000;
+	a<-tktoplevel(); n<-4000;
 	if(is.vector(xtab)){xtab<-data.frame(time=xtab,censor=1);}
 	if(is.vector(ytab)){ytab<-data.frame(time=ytab,censor=1);}
 	frame1<-tkframe(a,pady=5,padx=5);
@@ -13,7 +21,37 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	ar10<-tkfont.create(family='arial',size=10); ar8<-tkfont.create(family='arial',size=8);
 	qincr<-c(.01,.05,.1,.2); tcl('set','qrse','boot'); penv<-environment(); cursor<-1;
 	digits=4;
-	oldwidth<-options('width'); options(width=250);
+	oldwidth<-options('width'); options(width=280);
+	cleanUpObjectsFunc<-function(){
+		for(i in 1:n){vard1[[i,0]]<-'-';vard1[[i,1]]<-1;vard2[[i,0]]<-'-';vard2[[i,1]]<-1;}
+		for(i in c('summ.out','lrnk.out','scor.out','qreg.out','qreg.sum','mort.out')){
+			if(exists(i,envir=penv)){rm(list=i,envir=penv);}
+		}
+		#ls(env=penv);
+		for(i in c('plSurvBut','svSummBut','svScorBut','svQregBut',
+				'svMortBut','svAllBut','prSummBut',
+				'prScorBut','prQregBut','prMortBut','prAllBut')){
+			tkconfigure(get(i),state='disabled');
+		}
+	}
+	loadWMFunc<-function(filename=NULL){
+		if(is.null(filename)){
+			filename<-tclvalue(tkgetOpenFile(initialdir=tclvalue('path'),
+							 filetypes="{{WinModest} {.dat .txt}}"));
+		}
+		if(filename!=""){
+			d<-read.delim(filename,sep='\t',header=F); 
+			if(d[nrow(d),1]== -1) {d<-d[-nrow(d),];}
+			if(ncol(d)==4 & nrow(d) > 4 & all(sort(unique(d[,3]))==1:2)){
+				cleanUpObjectsFunc();
+				assign('xtab',tab2raw(d,output=c('times','censor'),choosegroup=1),env=penv);
+				assign('ytab',tab2raw(d,output=c('times','censor'),choosegroup=2),env=penv);
+				array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
+				array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
+	 			tkconfigure(plSurvBut,state='active')
+			} else warning('File is not in WinModest format. Please try again.');
+		}
+	}
 	loadFunc<-function(filename=NULL){ 
 		tkconfigure(a,cursor='watch');
 		if(is.null(filename)){
@@ -21,20 +59,18 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 							 filetypes="{{R Data} {.rdata .Rdata}}"));
 		}
 		if(filename!=""){
-			for(i in c('summ.out','lrnk.out','scor.out','qreg.out','qreg.sum','mort.out')){
-				if(exists(i,envir=penv)){rm(list=i,envir=penv);}
-			}
-			ls(env=penv);
-			for(i in c('plQregBut','plSurvBut','svSummBut','svScorBut','svQregBut',
-				   'svMortBut','svplSurvBut','svplQregBut','svAllBut','prSummBut',
-				   'prScorBut','prQregBut','prMortBut','prAllBut')){
-				tkconfigure(get(i),state='disabled');
-			}
+			cleanUpObjectsFunc();
 			load(filename); objcount<-0;
 			if(dev.cur()>1){dev.off(dev.cur());}
 			# this used to test for existance but since xtab and ytab
 			# have been added as parameters defaulting to null, this
 			# now tests for nullness
+			tcl("set","surv_percentalive",as.numeric(surv_percentalive));
+			tcl("set","surv_mark",ifelse(is.na(surv_mark),'',surv_mark));
+			tcl("set","surv_pch1",ifelse(is.na(surv_pch[1]),'',surv_pch[1]));
+			tcl("set","surv_pch2",ifelse(is.na(surv_pch[2]),'',surv_pch[2]));
+			tcl("set","surv_col1",surv_col[1]);tcl("set","surv_col2",surv_col[2]);
+			tcl("set","logrank_perms",logrank_perms);
 			if((is.matrix(xtab)|is.data.frame(xtab)) &
 			   (is.matrix(ytab)|is.data.frame(ytab))){
 				array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
@@ -106,7 +142,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		tkconfigure(a,cursor='');
 	}
 
-	quitFunc<-function(){tkdestroy(a);}
+	quitFunc<-function(){options(width=oldwidth[[1]]);tkdestroy(a);}
 
 	doGeneralFunc<-function(){
 		# the [,1:2] subscript might be extraneous; remove it when nothing has broken in a while
@@ -119,6 +155,11 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		assign('xy',c(x,y),env=penv);
 		assign('lx',length(x),env=penv);assign('ly',length(y),env=penv);
 		assign('group',factor(rep(xynames,c(lx,ly)),levels=xynames),env=penv);
+		assign('surv_percentalive',as.numeric(tclvalue("surv_percentalive")),env=penv);
+		assign('surv_mark',as.numeric(tclvalue("surv_mark")),env=penv);
+		assign('surv_pch',as.numeric(c(tclvalue('surv_pch1'),tclvalue('surv_pch2'))),env=penv);
+		assign('surv_col',c(tclvalue('surv_col1'),tclvalue('surv_col2')),env=penv);
+		assign('logrank_perms',as.numeric(tclvalue("logrank_perms")),env=penv);
 	}
 
 	doSummFunc<-function(){
@@ -129,7 +170,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		qcix<-qci(xtab[,1],c(.5,.9)); qciy<-qci(ytab[,1],c(.5,.9));
 		#xyt<-t.test(log(x[x>0]),log(y[y>0]));
 		xytab<-rbind(cbind(xtab,group=1),cbind(ytab,group=2));
-		xylr<-surv2.logrank(Surv(xytab[,1],event=xytab[,2]),xytab[,3]);
+		xylr<-surv2.logrank(Surv(xytab[,1],event=xytab[,2]),xytab[,3],nsim=logrank_perms);
 		summ.out<-data.frame(NA,lx,NA,NA,ly,NA,NA);
 		colnames(summ.out)<-c(paste(xynames[1],'lci'),xynames[1],paste(xynames[1],'uci'),
 				      paste(xynames[2],'lci'),xynames[2],paste(xynames[2],'uci'),'p');
@@ -163,6 +204,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		tkconfigure(prScorBut,state='normal',foreground='black',activeforeground='black');
 		tkconfigure(prAllBut,state='normal',foreground='black',activeforeground='black');
 		tkconfigure(doSummBut,text='Update Report',foreground='blue',activeforeground='blue');
+# 		tkconfigure(plQSurvBut,state='normal',foreground='black',activeforeground='black');
 		tkconfigure(a,cursor='');
 	}
 	doQregFunc<-function(){
@@ -200,8 +242,12 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	doMortFunc<-function(){
 		tkconfigure(a,cursor='watch');
 		doGeneralFunc();
-		assign('mort.out',findpars(xtab[,1],ytab[,1],cx=xtab[,2],cy=ytab[,2],summary=F),
-		       env=penv);
+		if(smartpars){
+			assign('mort.out',smartpars(xtab[,1],ytab[,1],cx=xtab[,2],cy=ytab[,2]),env=penv);
+		} else {
+			assign('mort.out',findpars(xtab[,1],ytab[,1],cx=xtab[,2],cy=ytab[,2],summary=F),
+			       env=penv)
+		}
 		prMortFunc();
 		tkconfigure(svMortBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(svAllBut,state='normal',foreground='blue',activeforeground='blue');
@@ -221,18 +267,33 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		#points(qreg.sig[,1],qreg.sig[,2],col='red',lwd=3);
 		#below version looks better in grayscale 
 		points(qreg.sig[,1],qreg.sig[,2],col='black',lwd=2,pch=3);
-		tkconfigure(svplSurvBut,state='disabled');
-		tkconfigure(svplQregBut,state='normal',foreground='blue',activeforeground='blue');
+		#tkconfigure(svplSurvBut,state='disabled');
+		#tkconfigure(svplQregBut,state='normal',foreground='blue',activeforeground='blue');
+		tkconfigure(svPlotBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(a,cursor='');
 	}
 	plSurvFunc<-function(){
 		tkconfigure(a,cursor='watch');
 		doGeneralFunc();
-		plotsurv(xtab[,1],ytab[,1],xtab[,2],ytab[,2],legend=c(xynames));
-		tkconfigure(svplSurvBut,state='normal',foreground='blue',activeforeground='blue');
-		tkconfigure(svplQregBut,state='disabled');
+		if(!surv_percentalive){
+			plotsurv(xtab[,1],ytab[,1],xtab[,2],ytab[,2],legend=c(xynames),
+				 fun='event',lloc='bottomright',col=surv_col,bg=surv_col,pch=surv_pch,
+				 mark=surv_mark)
+		} else plotsurv(xtab[,1],ytab[,1],xtab[,2],ytab[,2],legend=c(xynames),col=surv_col,bg=surv_col,
+				 pch=surv_pch,mark=surv_mark);
+		#tkconfigure(svplSurvBut,state='normal',foreground='blue',activeforeground='blue');
+		tkconfigure(svPlotBut,state='normal',foreground='blue',activeforeground='blue');
+		#tkconfigure(svplQregBut,state='disabled');
 		tkconfigure(a,cursor='');
 	}
+
+# 	plQSurvFunc<-function(){
+# 		doGeneralFunc();
+# 		srv<-plotsurv(xtab[,1],ytab[,1],xtab[,2],ytab[,2],pch=NA,lwd=3);
+# 		abline(v=scor.out[scor.out$sig=='*','age'],col='green');
+# 		tkconfigure(svPlotBut,state='normal',foreground='blue',activeforeground='blue');
+# 		legend(x='bottomleft',col=c('black','darkred','green'),lwd=c(3,3,1),legend=c(xynames,'significant'),bg='white');
+# 	}
 
 	doSummBut<-tkbutton(frame2,text="Run",command=doSummFunc,font=ar10);
 	doScorBut<-tkbutton(frame2,text="Run",command=doScorFunc,font=ar10);
@@ -242,6 +303,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	plQregBut<-tkbutton(frame2,text="Draw",
 			    command=plQregFunc,font=ar10,state='disabled');
 	plSurvBut<-tkbutton(frame2,text="Draw",command=plSurvFunc,font=ar10);
+# 	plQSurvBut<-tkbutton(frame2,text="Draw",command=plQSurvFunc,font=ar10,state='disabled');
 
 	delFunc<-function(){
 		last<-as.numeric(tclvalue(tcl(textout,'index','end')));
@@ -308,10 +370,11 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		if(filename!=""){
 			#prGeneralFunc<-function(d,title='',na='NA',dg=4,to=NULL){
 			switch(ext,
-				'.txt'={write.table(d,file=filename,sep='\t',row.names=T,col.names=T,
+				'.txt'={write.table(d,file=filename,sep='\t',row.names=T,col.names=NA,
 					append=append);},
 				'.rdata'={save(list=d,file=filename);},
 				'.Rdata'={save(list=d,file=filename);},
+				'.pdf'={dev.copy2pdf(file=filename);},
 				'.eps'={dev.copy2eps(file=filename);},
 				'.dat'={write(d,file=filename,append=append)}
 			)
@@ -367,7 +430,8 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 
 	svAllFunc<-function(){
 		doGeneralFunc();
-		tosave<-c('xtab','ytab','xynames');
+		tosave<-c('xtab','ytab','xynames','surv_percentalive','surv_mark',
+			  'surv_pch','surv_col','logrank_perms');
 		if(exists('summ.out')){tosave<-c(tosave,'summ.out');}
 		if(exists('lrnk.out')){tosave<-c(tosave,'lrnk.out');}
 		if(exists('scor.out')){tosave<-c(tosave,'scor.out');}
@@ -379,16 +443,58 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		}
 	}
 
-	svplQregFunc<-function(){
-		if(svGeneralFunc(NULL,'Encapsulated Postscript','.eps')>0){
-			tkconfigure(svplQregBut,foreground='black',activeforeground='black');
+# 	svplQregFunc<-function(){
+# 		if(svGeneralFunc(NULL,'Encapsulated Postscript','.eps')>0){
+# 			tkconfigure(svplQregBut,foreground='black',activeforeground='black');
+# 		}
+# 	}
+# 
+# 	svplSurvFunc<-function(){
+# 		if(svGeneralFunc(NULL,'Encapsulated Postscript','.eps')>0){
+# 			tkconfigure(svplSurvBut,foreground='black',activeforeground='black');
+# 		}
+# 	}
+
+	svPlotFunc<-function(){
+		if(svGeneralFunc(NULL,'PDF','.pdf')>0){
+			tkconfigure(svPlotBut,foreground='black',activeforeground='black');
 		}
 	}
-
-	svplSurvFunc<-function(){
-		if(svGeneralFunc(NULL,'Encapsulated Postscript','.eps')>0){
-			tkconfigure(svplSurvBut,foreground='black',activeforeground='black');
+	configFunc<-function(){
+		b<-tktoplevel();
+		tkwm.title(b,'Survomatic Settings');
+		surv_percentalive.cb <- tkcheckbutton(b,variable="surv_percentalive");
+		surv_mark.txt <- tkentry(b,width=3,textvariable="surv_mark");
+		surv_pch1.txt <- tkentry(b,width=3,textvariable="surv_pch1");
+		surv_pch2.txt <- tkentry(b,width=3,textvariable="surv_pch2");
+		surv_col1.txt <- tkentry(b,width=10,textvariable="surv_col1");
+		surv_col2.txt <- tkentry(b,width=10,textvariable="surv_col2");
+		logrank_perms.txt <- tkentry(b,width=20,textvariable="logrank_perms");
+		configOKfunc<-function(){tkdestroy(b);}
+		configPCHfunc<-function(){
+			plot(1:6,1:6,type='n',axes=F,xlab='',ylab='',
+			     main='Numeric Codes For Valid Plot Symbols');
+			k<- -1;
+			for(i in 6:1){
+				for(j in 1:5){
+					k<-k+1;points(j,i+0.1,pch=ifelse(k<26,k,''),cex=2);
+					text(j,i-0.1,ifelse(k<26,k,''));
+				}
+			}
 		}
+		configOKbut<-tkbutton(b,text='OK',command=configOKfunc);
+		configPCHbut<-tkbutton(b,text='?',command=configPCHfunc);
+		tkgrid(tklabel(b,text="Plot survival from 100% to 0%"),surv_percentalive.cb);
+		tkgrid(tklabel(b,text="Symbol to use for censored data"),surv_mark.txt);
+		tkgrid(tklabel(b,text=paste('Symbols for',
+					   xynames[1],'and',xynames[2])),surv_pch1.txt,surv_pch2.txt,
+					   configPCHbut);
+		tkgrid(tklabel(b,text=paste('Line colors for',
+					   xynames[1],'and',xynames[2])),surv_col1.txt,surv_col2.txt);
+		tkgrid(tklabel(b,text="Number of permutations to use for log-rank"),
+			       logrank_perms.txt,columnspan=2);
+		tkgrid(configOKbut);
+		doGeneralFunc()
 	}
 
 	svSummBut<-tkbutton(frame2,text="Save Output (tab delimited spreadsheet)",command=svSummFunc,font=ar10,state='disabled');
@@ -396,23 +502,27 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	svQregBut<-tkbutton(frame2,text="Save Output (tab delimited spreadsheet)",command=svQregFunc,font=ar10,state='disabled');
 	svMortBut<-tkbutton(frame2,text="Save Output (tab delimited spreadsheet)",command=svMortFunc,font=ar10,state='disabled');
 	svAllBut<-tkbutton(frame2,text="Save All Output (.Rdata file)",command=svAllFunc,font=ar10,state='disabled');
-	svplQregBut<-tkbutton(frame2,text="Save Image (.eps file)",command=svplQregFunc,font=ar10,state='disabled');
-	svplSurvBut<-tkbutton(frame2,text="Save Image (.eps file)",command=svplSurvFunc,font=ar10,state='disabled');
+# 	svplQregBut<-tkbutton(frame2,text="Save Image (.eps file)",command=svplQregFunc,font=ar10,state='disabled');
+# 	svplSurvBut<-tkbutton(frame2,text="Save Image (.eps file)",command=svplSurvFunc,font=ar10,state='disabled');
+	svPlotBut<-tkbutton(frame2,text="Save Current Image (PDF)",command=svPlotFunc,font=ar10,state='disabled');
+	configBut<-tkbutton(frame2,text="Options",command=configFunc,font=ar10);
 
 	tkgrid(tklabel(frame2,text='Summary Report',font=ar10,anchor='e'),
 	       doSummBut,prSummBut,svSummBut,sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='Survival Curves',font=ar10,anchor='e'),
-	       tklabel(frame2,text=''),plSurvBut,svplSurvBut,sticky='we',padx=1,pady=3);
+	       tklabel(frame2,text=''),plSurvBut,tklabel(frame2,text=''),sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='Score Test',font=ar10,anchor='e'),
 	       doScorBut,prScorBut,svScorBut,sticky='we',padx=1,pady=3);
+# 	tkgrid(tklabel(frame2,text='Surv. Curves w/ Signif. Quantiles',font=ar10,anchor='e'),tklabel(frame2,text=''),plQSurvBut,tklabel(frame2,text=''),sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='Quantile Regression',font=ar10,anchor='e'),
                doQregBut,prQregBut,svQregBut,sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='Quantile Regression Plot',font=ar10,anchor='e'),
-	       tklabel(frame2,text=''),plQregBut,svplQregBut,sticky='we',padx=1,pady=3);
+	       tklabel(frame2,text=''),plQregBut,tklabel(frame2,text=''),sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='Mortality Models',font=ar10,anchor='e'),
 	       doMortBut,prMortBut,svMortBut,sticky='we',padx=1,pady=3);
 	tkgrid(tklabel(frame2,text='All Tests',font=ar10,anchor='e'),
 	       doAllBut,prAllBut,svAllBut,sticky='we',padx=1,pady=3);
+	tkgrid(tklabel(frame2,text=''),tklabel(frame2,text=''),configBut,svPlotBut,sticky='we',padx=1,pady=3);
 
 	# frame1 variables
 	blank1<-tklabel(frame1,text='');blank2<-tklabel(frame1,text='');
@@ -456,14 +566,14 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 # 	mortchk<-tkcheckbutton(frame2,variable="tmort",text='Mortality',font=ar10,anchor='w');
 # 	summchk<-tkcheckbutton(frame2,variable="tsumm",text='Summary',font=ar10,anchor='w');
 # 	runBut<-tkbutton(frame2,text="Run!",command=runFunc);
-	dbBut<-tkbutton(frame4,text="Load from Database",command=function(){},padx=3,state='disabled');
+	dbBut<-tkbutton(frame4,text="Load WinModest Data",command=function() loadWMFunc(),padx=3);
 	loadBut<-tkbutton(frame4,text="Load R Data",command=function() loadFunc(),padx=3);
 	delBut<-tkbutton(frame4,text='Clear Output Window',command=delFunc,padx=3);
 	quitBut<-tkbutton(frame4,text="Quit",command=quitFunc,padx=3);
 	# set up frame 3
 	xscr<-tkscrollbar(frame3,command=function(...)tkxview(textout,...),orient='horizontal');
 	yscr3<-tkscrollbar(frame3,command=function(...)tkyview(textout,...));
-	textout<-tktext(frame3,bg='white',font='courier 10',wrap='none',width=116,
+	textout<-tktext(frame3,bg='white',font='courier 7',wrap='none',width=165,
 			xscrollcommand=function(...) tkset(xscr,...),
 			yscrollcommand=function(...) tkset(yscr3,...));
 	# arrange the input tables in frame1
@@ -497,5 +607,4 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	tkgrid(frame1,frame2,padx=2,pady=2);
 	tkgrid(frame3,columnspan=2,sticky='nwe');
 	#browser();
-	options(width=oldwidth[[1]]);
 }

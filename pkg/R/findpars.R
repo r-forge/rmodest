@@ -245,11 +245,12 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 			 'Logistic different s',
 			 'Gompertz-Makeham -> Logistic-Makeham',
 			 'Logistic -> Logistic-Makeham',
-			 'Best Logistic-Makeham',
+			 'Logistic-Makeham',
 			 'Logistic-Makeham different a','Logistic-Makeham different b',
 			 'Logistic-Makeham different c','Logistic-Makeham different s');
 	colnames(out)<-c('MLE','# cycles','OK?','a1','b1','c1','s1',
 			 'a2','b2','c2','s2','model','id','nil','LR','AIC','BIC','p (chi squared)','sig?');
+	# What's the following line for?
 	out<-(out[is.finite(out$MLE),]);
 	if(!is.null(y)){
 		unc.max0<-c(es.e$group0$max,es.w$group0$max,es.g$group0$max,es.gm$group0$max,
@@ -298,5 +299,7 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 		print(out,digits=digits);#print(ests);
 		print(sum(out[,2]));#invisible(list(results=out));
 	}
+
+	# somewhere here, test which results are relevant and keep only those
 	invisible(out);
 }

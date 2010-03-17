@@ -6,6 +6,7 @@ function(par,cons=rep.int(1,4),x,y=NULL,keep=1:2,np=2,model='g'){
  env1<-list(a=par1[1],b=par1[2],c=par1[3],s=par1[4],x=x); 
  env2<-list(a=par2[1],b=par2[2],c=par2[3],s=par2[4],x=y);
  out1<-out2<-c();
+ dex<-getOption('dex');
  for(i in dex[[model]]){
  	out1<-c(out1,sum(eval(i,envir=env1)));out2<-c(out2,sum(eval(i,envir=env2)));
  }
