@@ -1,5 +1,5 @@
 `survgui`<-
-function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),deparse(substitute(ytab))),surv_percentalive=TRUE,surv_mark=NA,surv_pch=23:24,surv_col=c('black','darkred'),logrank_perms=2000,smartpars=T){
+function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),deparse(substitute(ytab))),surv_percentalive=TRUE,surv_mark=NA,surv_pch=23:24,surv_col=c('black','darkred'),logrank_perms=2000,smartpars=T,qsigf=function(s){return(s)},pcx=6){
 	# make sure the environment can support this GUI
 	xynames<-as.character(xynames);
 	require(tcltk);
@@ -12,15 +12,16 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	tcl("set","surv_pch2",ifelse(is.na(surv_pch[2]),'',surv_pch[2]));
 	tcl("set","surv_col1",surv_col[1]);tcl("set","surv_col2",surv_col[2]);
 	tcl("set","logrank_perms",logrank_perms);
+	tcl("set","pcx",pcx);
 	# declare a bunch of tcl variables for later use
-	a<-tktoplevel(); n<-4000;
+	a<-tktoplevel(); n<-20;
 	if(is.vector(xtab)){xtab<-data.frame(time=xtab,censor=1);}
 	if(is.vector(ytab)){ytab<-data.frame(time=ytab,censor=1);}
 	frame1<-tkframe(a,pady=5,padx=5);
 	frame2<-tkframe(a);frame3<-tkframe(a);frame4<-tkframe(frame2);
 	ar10<-tkfont.create(family='arial',size=10); ar8<-tkfont.create(family='arial',size=8);
 	qincr<-c(.01,.05,.1,.2); tcl('set','qrse','boot'); penv<-environment(); cursor<-1;
-	digits=4;
+	digits=4; data(references,envir=penv); myrefs<-c();
 	oldwidth<-options('width'); options(width=280);
 	cleanUpObjectsFunc<-function(){
 		for(i in 1:n){vard1[[i,0]]<-'-';vard1[[i,1]]<-1;vard2[[i,0]]<-'-';vard2[[i,1]]<-1;}
@@ -28,7 +29,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 			if(exists(i,envir=penv)){rm(list=i,envir=penv);}
 		}
 		#ls(env=penv);
-		for(i in c('plSurvBut','svSummBut','svScorBut','svQregBut',
+		for(i in c('plSurvBut','svSummBut','svScorBut','svQregBut','plQregBut',
 				'svMortBut','svAllBut','prSummBut',
 				'prScorBut','prQregBut','prMortBut','prAllBut')){
 			tkconfigure(get(i),state='disabled');
@@ -46,6 +47,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 				cleanUpObjectsFunc();
 				assign('xtab',tab2raw(d,output=c('times','censor'),choosegroup=1),env=penv);
 				assign('ytab',tab2raw(d,output=c('times','censor'),choosegroup=2),env=penv);
+				assign('n',max(dim(xtab)[1],dim(ytab)[1],n),env=penv);
 				array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
 				array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
 	 			tkconfigure(plSurvBut,state='active')
@@ -73,6 +75,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 			tcl("set","logrank_perms",logrank_perms);
 			if((is.matrix(xtab)|is.data.frame(xtab)) &
 			   (is.matrix(ytab)|is.data.frame(ytab))){
+				assign('n',max(dim(xtab)[1],dim(ytab)[1],n),env=penv);
 				array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
 				array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
 				tkconfigure(plSurvBut,state='active')
@@ -207,9 +210,12 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 # 		tkconfigure(plQSurvBut,state='normal',foreground='black',activeforeground='black');
 		tkconfigure(a,cursor='');
 	}
+
 	doQregFunc<-function(){
 		tkconfigure(a,cursor='watch');
 		doGeneralFunc(); qreg.sum<-0;class(qreg.sum)<-"try-error"; i<-1;
+		xytab<-rbind(cbind(xtab,group=1),cbind(ytab,group=2));
+		iqreg<-crq(Surv(log(xytab[,1]),xytab[,2])~xytab[,3],method="Por");
 		while(class(qreg.sum)=="try-error"){
 			if(i>length(qincr)){
 				out<-"Unable to perform quantile regression.";
@@ -219,14 +225,16 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 			# here, it is used to construct a sequence of tau values for rq
 			# that don't crash it (and keep trying until it exhausts the
 			# reasonable bandwidths)
-			iqreg<-rq(log(xy)~group,tau=seq(qincr[i],1-qincr[i],qincr[i]));i<-i+1;
-			qreg.sum<-try(summary(iqreg,se=tclvalue('qrse'))); cat('.');
+			#iqreg<-rq(log(xy)~group,tau=seq(qincr[i],1-qincr[i],qincr[i]));i<-i+1;
+			#qreg.sum<-try(summary(iqreg,se=tclvalue('qrse'))); cat('.');
+			qreg.sum<-try(summary(iqreg,seq(qincr[i],1-qincr[i],qincr[i])));i<-i+1;
 		}
 		if(class(qreg.sum)!="character"){
-			qreg.out<-c(); qreg.sig=F;
-			for(i in qreg.sum){
-				qreg.out<-rbind(qreg.out,c(quantile=i$tau,i$coefficients[2,]));
-			}
+			#qreg.sig=F;
+			qreg.out<-data.frame(t(sapply(qreg.sum,function(x){
+				return(c(quantile=x$tau,x$coefficients[2,]))
+			})));
+			qreg.out$adjp<-p.adjust(qreg.out[,7],'holm');
 			tkconfigure(plQregBut,state='normal');
 			tkconfigure(svQregBut,state='normal',foreground='blue',activeforeground='blue');
 			tkconfigure(svAllBut,state='normal',foreground='blue',activeforeground='blue');
@@ -235,6 +243,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 			assign('qreg.sum',qreg.sum,env=penv);
 		}else{qreg.out<-qreg.sum;}
 		assign('qreg.out',qreg.out,env=penv);
+		assign('qreg.sig',na.exclude(qreg.out[qreg.out[,8]<.05,]),env=penv);
 		tkconfigure(doSummBut,text='Update Report',foreground='blue',activeforeground='blue');
 		prQregFunc();
 		tkconfigure(a,cursor='');
@@ -262,13 +271,10 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	plQregFunc<-function(){
 		tkconfigure(a,cursor='watch');
 		doGeneralFunc();
-		plot(qreg.sum,parm=2,ols=F,ylim=c(-1,1),main=paste(tmain,"Quantile Regression"));
-		qreg.sig<-na.exclude(qreg.out[qreg.out[,5]<.05,]);
+		plot(qreg.sum,nrow=1,ncol=1,parm=2,ols=F,ylim=c(-3,3),
+		     main=paste(tmain,"Quantile Regression"),sigf=qsigf);
+		#qreg.sig<-na.exclude(qreg.out[qreg.out[,5]<.05,]);
 		#points(qreg.sig[,1],qreg.sig[,2],col='red',lwd=3);
-		#below version looks better in grayscale 
-		points(qreg.sig[,1],qreg.sig[,2],col='black',lwd=2,pch=3);
-		#tkconfigure(svplSurvBut,state='disabled');
-		#tkconfigure(svplQregBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(svPlotBut,state='normal',foreground='blue',activeforeground='blue');
 		tkconfigure(a,cursor='');
 	}
@@ -320,6 +326,14 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		tkinsert(textout,'end','\n\n\n');
 		tcl(textout,'yview',cursor);
 	}
+	
+	makeRefs<-function(){
+		myrefs<-c('\nLiterature References',references$survomatic,references$r,references$logrank);
+		if(exists('scor.out')){myrefs<-c(myrefs,references$score);}
+		if(exists('qreg.out')){myrefs<-c(myrefs,references$quantreg,references$multcomp);}
+		if(exists('mort.out')){myrefs<-c(myrefs,references$hazard);}
+		return(myrefs);
+	}
 
 	prSummFunc<-function(){
 		prGeneralFunc(summ.out,'Summary',na='  ');
@@ -335,7 +349,10 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 			prGeneralFunc(qreg.out[!is.na(qreg.out[,5])&qreg.out[,5]<0.05,],
 				      'Quantile Regression: Significant Quantiles');
 		}
-		if(exists('mort.out')){prGeneralFunc(mort.out,'Mortality Models');}
+		if(exists('mort.out')){
+			prGeneralFunc(mort.out,'Mortality Models');
+		}
+		tkinsert(textout,'end',paste(makeRefs(),collapse='\n'));
 		tcl(textout,'yview',tempcursor);
 	}
 	prScorFunc<-function(){prGeneralFunc(scor.out,'Score Test');}
@@ -361,7 +378,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	prAllBut<-tkbutton(frame2,text="Show All Output",command=prAllFunc,font=ar10,
 			    state='disabled');
 
-	svGeneralFunc<-function(d,type,ext,filename=NULL,append=F){
+	svGeneralFunc<-function(d,type,ext,filename=NULL,rn=T,cn=NA,q=F,append=F){
 		if(is.null(filename)){
 			filetypes<-paste('{{',type,'} {',ext,'}}',sep='')
 			filename<-tkgetSaveFile(initialdir=tclvalue('path'),filetypes=filetypes);
@@ -370,7 +387,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		if(filename!=""){
 			#prGeneralFunc<-function(d,title='',na='NA',dg=4,to=NULL){
 			switch(ext,
-				'.txt'={write.table(d,file=filename,sep='\t',row.names=T,col.names=NA,
+				'.txt'={write.table(d,file=filename,sep='\t',quote=q,row.names=rn,col.names=cn,
 					append=append);},
 				'.rdata'={save(list=d,file=filename);},
 				'.Rdata'={save(list=d,file=filename);},
@@ -384,6 +401,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 
 	svSummFunc<-function(){
 		if((filename<-svGeneralFunc(NULL,'Tab Delimited Test','.txt'))>0){
+			myrefs<-c();
 			svGeneralFunc('Summary\n','','.dat',filename=filename,append=T)
 			svGeneralFunc(summ.out,'','.txt',filename=filename,append=T);
 			svGeneralFunc(paste('\n\nLog-rank\n\nTest statistic:',lrnk.out$stat,',',
@@ -406,6 +424,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 					      '','.dat',filename=filename,append=T);
 				svGeneralFunc(mort.out,'','.txt',filename=filename,append=T);
 			};
+			svGeneralFunc(makeRefs(),'','.txt',filename=filename,rn=F,cn=F,q=F,append=T);
 			tkconfigure(svSummBut,foreground='black',activeforeground='black');
 		}
 	}
@@ -470,7 +489,11 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 		surv_col1.txt <- tkentry(b,width=10,textvariable="surv_col1");
 		surv_col2.txt <- tkentry(b,width=10,textvariable="surv_col2");
 		logrank_perms.txt <- tkentry(b,width=20,textvariable="logrank_perms");
-		configOKfunc<-function(){tkdestroy(b);}
+		fontsize.txt <- tkentry(b,width=3,textvariable="pcx");
+		configOKfunc<-function(){
+			tkconfigure(textout,font=paste('courier',tclvalue("pcx")));
+			tkdestroy(b);
+		}
 		configPCHfunc<-function(){
 			plot(1:6,1:6,type='n',axes=F,xlab='',ylab='',
 			     main='Numeric Codes For Valid Plot Symbols');
@@ -493,6 +516,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 					   xynames[1],'and',xynames[2])),surv_col1.txt,surv_col2.txt);
 		tkgrid(tklabel(b,text="Number of permutations to use for log-rank"),
 			       logrank_perms.txt,columnspan=2);
+		tkgrid(tklabel(b,text="Font size for output"),fontsize.txt,columnspan=2);
 		tkgrid(configOKbut);
 		doGeneralFunc()
 	}
@@ -541,6 +565,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 
 	# if data passed as r objects from environment
 	if(!is.null(xtab)&!is.null(ytab)){
+		assign('n',max(dim(xtab)[1],dim(ytab)[1],n),env=penv);
 		array2tcl(xtab,vard1,1:dim(xtab)[1],0:1);
 		array2tcl(ytab,vard2,1:dim(ytab)[1],0:1);
 		tkconfigure(plSurvBut,state='active');
@@ -573,7 +598,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	# set up frame 3
 	xscr<-tkscrollbar(frame3,command=function(...)tkxview(textout,...),orient='horizontal');
 	yscr3<-tkscrollbar(frame3,command=function(...)tkyview(textout,...));
-	textout<-tktext(frame3,bg='white',font='courier 7',wrap='none',width=165,
+	textout<-tktext(frame3,bg='white',font=paste('courier',tclvalue("pcx")),wrap='none',width=165,
 			xscrollcommand=function(...) tkset(xscr,...),
 			yscrollcommand=function(...) tkset(yscr3,...));
 	# arrange the input tables in frame1
