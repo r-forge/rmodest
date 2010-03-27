@@ -4,12 +4,13 @@ function(x,y=0,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debu
  	 mvers='',method="Nelder-Mead",tlog=F){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	call<-sys.call();
+	# eventually might use hessians from mledrv but no noeed for now
 	switch(model,
 		w={np<-2;ex<-"ofw";hs<-NULL;keep<-c(1,2,5,6);ub=c(.5,10,0,0);},
-		g={np<-2;ex<-paste("ofg",mvers,sep='');hs<-hsg;keep<-c(1,2,5,6);},
-		gm={np<-3;ex<-paste("ofgm",mvers,sep='');hs<-hsgm;keep<-c(1:3,5:7);},
-		l={np<-3;ex<-paste("ofl",mvers,sep='');hs<-hsl;keep<-c(1,2,4,5,6,8);},
-		lm={np<-4;ex<-paste("oflm",mvers,sep='');hs<-hslm;keep<-1:8;},
+		g={np<-2;ex<-paste("ofg",mvers,sep='');hs<-NULL;keep<-c(1,2,5,6);},
+		gm={np<-3;ex<-paste("ofgm",mvers,sep='');hs<-NULL;keep<-c(1:3,5:7);},
+		l={np<-3;ex<-paste("ofl",mvers,sep='');hs<-NULL;keep<-c(1,2,4,5,6,8);},
+		lm={np<-4;ex<-paste("oflm",mvers,sep='');hs<-NULL;keep<-1:8;},
 		stop("The model you specified, ",model,", does not exist.
 The only models supported in this version are: 
 g, gm, l, and lm.")
