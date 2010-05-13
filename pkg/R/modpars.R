@@ -14,9 +14,9 @@ either as a single boolean value or a vector
 of four boolean values. Please fix your input
 and try again.');}
 	keepi<-keepi[c(rep(T,4),!cni)[keepi]];
-	if(length(x)!=length(keepi) & length(x)!=2*length(keepi)){
-		print('Mismatch between model and parameter length.');traceback();browser();
-	}
+# 	if(length(x)!=length(keepi) & length(x)!=2*length(keepi)){
+# 		print('Mismatch between model and parameter length.');traceback();browser();
+# 	}
 	# Here we convert the unique-values-only parameter vector into standard form
 	out<-rep.int(NA,8); out[keepi]<-x; 
 	if(sum(cni)>0){out[5:8][cni]<-out[1:4][cni];}
@@ -27,14 +27,22 @@ and try again.');}
 		# If the target constraint is different from the input constraint,
 		# average the two parameters using the function specified by pf
 		# No point in doing this is the constraints are the same
-		if(sum(cni==cno)<4&sum(out[cno]>0)){
+		if(any(cni!=cno)&sum(out[cno]>0)){
+			out[out==0]<- -1;
+			# above hack because when a member of out is 0, then the below 
+			# function drops the corresponding column from the matrix!
+			# Matrix algebra tends to treat 0s as delete-me signs, and 
+			# if a parameter actually happens to *be* 0, things get confused
 			out[cno]<-apply(out*as.matrix(diag(cno)[c(1:4,1:4),cno]),2,
 				       function(x,f){f(na.omit(x[x!=0]));},pf);
+			# unhack
+			out[out== -1] <- 0;
 		}
 		if(trim){out[5:8][cno]<-NA;}
 	}
 	# Gotta remember to trash the unused parameters for the target model.
 	out[-keepo]<-NA;
-	if(trim){out<-as.numeric(na.omit(out));} 
+	if(trim){out<-as.numeric(na.omit(out));}
+	#if(onegrp){out<-out[1:(length(out)/2)]}
 	return(out);
 }

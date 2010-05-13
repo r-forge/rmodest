@@ -1,10 +1,10 @@
 Package: Survomatic
 Type: Package
 Title: Analysis of longevity data.
-Version: 1.2.4.12
+Version: 1.2.5.0
 Date: 2010-01-07
 URL: http://rmodest.r-forge.r-project.org/
-Depends: survival, surv2sample, quantreg, SparseM, splines, R (>= 2.6.0)
+Depends: survival, surv2sample, quantreg, SparseM, splines, eha, R (>= 2.6.0)
 Author: Alex F. Bokov and Jonathan Gelfond
 Maintainer: Alex F. Bokov <bokov@uthscsa.edu>
 Description: Analyzes longevity data.

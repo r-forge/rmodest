@@ -22,7 +22,7 @@ g, gm, l, and lm.")
 		if(length(par)==2*np){par1<-par[(np+1):(2*np)];
 		} else {if(length(par)==8){par1<-par[5:8];
 		} else par1<-par;}
-		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cy=cy,mvers=mvers,method=method,tlog=tlog);
+		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cy,mvers=mvers,method=method,tlog=tlog);
 		options('warn'=0);
 		out$estimate<-c(out0$estimate,out1$estimate);
 		out$maximum<-sum(out0$maximum,out1$maximum);
@@ -38,6 +38,7 @@ g, gm, l, and lm.")
 				keep=keep[1:np],debug=debug,np=np);
 		#browser();
 		par<-fixpar(par,np,keep);
+		#if(is.null(par)) browser();
 		if(sum(is.na(par)>0)){
 		stop("At least one of the starting parameters (par) you 
 specified is an NA or NaN. Here are the parameters:\n",
@@ -66,7 +67,8 @@ and use the defaults.");}
 			out.old<-out;
 			cat(".");
 			options(show.error.messages=F);
-			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)))
+			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)));
+			#if(length(out)==1) browser();
 			#cat('cx:',cx,'\n','cy:',cy,'\n');
 			options(show.error.messages=T);
 			if(class(out)[1]!="try-error"){
@@ -75,6 +77,7 @@ and use the defaults.");}
 			} else {
 				p<-out.old[[1]]; lk<-NA;
 				# Bad starting params, huh? We'll see about that.
+				counter<-0;
 				while(is.na(lk)|is.infinite(lk)){
 					if(tlog){p[is.infinite(p)]<- 0; p<-(p-5)/2;
 						if(max(p-log(lb))<1e-10){
@@ -95,7 +98,7 @@ and use the defaults.");}
 						 keep=keep[1:np],ex=ex,nx=1,ny=1,cx=1,cy=1,
 						 tlog=tlog);
 					# Damn starting params! You have bested me, I surrender.
-					cat('!');
+					cat('!'); counter<-counter+1; if(counter>1e6){browser()}
 				}
 				if(!is.na(lk)){out<-list(p);change<-1;} else {break;}
 			} 

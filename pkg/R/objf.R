@@ -1,10 +1,10 @@
 `objf` <-
 function(par,lb=0,ub=10,cons=rep.int(1,4),x,y=NULL,keep=1:2,np=2,ex="ofg",nx,ny,cx,cy,tlog=F){
-	#cat('cx:',cx,'\n','cy:',cy,'\n');
-	#if(ex=='ofw'&mean(cons)!=1){browser();}
+	# below kind of experimental but fast
 	if(tlog){par<-exp(par);}
 	if(max(par<lb)!=0|max(par>=ub)!=0){return(NA);}
 	par1<-par2<-rep.int(0,4); par1[keep]<-par2[keep]<-par[1:np];
+	#if(ex=='ofw'){return(sum(dweibull(x,par[2],1/par[1],log=T)));}; if(ex=='ofw.old'){ex<-'ofw';}
 	sum1<-try(.C(ex,a=as.double(par1[1]),b=as.double(par1[2]),c=as.double(par1[3]),
 		     s=as.double(par1[4]),x=as.integer(x),size=as.integer(nx),censor=as.integer(cx),
 		     ans=double(1),PACKAGE="Survomatic"));

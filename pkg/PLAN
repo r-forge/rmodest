@@ -3,3 +3,6 @@ Plans
 * Make a plot function and button for fitted models.
 * Enable resampling in survgui()
 * replace rq with crq
+* Integrate SEM estimates into findpars
+* Rewrite findpars to be more dynamic
+
