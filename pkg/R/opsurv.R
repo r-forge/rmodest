@@ -1,7 +1,7 @@
 `opsurv` <-
 function(x,y=0,model='g',par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,
- 	 mvers='',method="Nelder-Mead",tlog=F){
+ 	 mvers='',method="Nelder-Mead",tlog=F,getsds=F){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	call<-sys.call();
 	# eventually might use hessians from mledrv but no noeed for now
@@ -108,6 +108,7 @@ and use the defaults.");}
 			names(out)<-c('estimate','maximum','iterations','code','message');
 			if(usegr) { out$gradient<-gr(out$estimate); }
 			if(debug){out$call<-call; out$callargs<-callargs;}
+			#if(getsds) {out$sd<-mledrv(x,model=model,par,what='sd');}
 			out$titer<-totaliter;
 			out$runtime<-proc.time()[3]-tstart;
 			if(tlog){out$estimate<-exp(out$estimate);}
