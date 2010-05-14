@@ -1,7 +1,7 @@
 Package: Survomatic
 Type: Package
 Title: Analysis of longevity data.
-Version: 1.2.5.1
+Version: 1.2.5.2
 Date: 2010-05-14
 URL: http://rforge.net/Survomatic/
 Depends: survival, surv2sample, quantreg, SparseM, splines, eha, R (>= 2.6.0)
