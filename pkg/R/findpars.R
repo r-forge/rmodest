@@ -1,7 +1,6 @@
 # former nil and bnil defaults: nil=6e-10,bnil=0.005,
 `findpars`<-
-function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summary=F,id=0,tlog=F,
-	 digits=22,sig=.05,models=NULL,writeunc=F,writegml=F){
+function(x, y=NULL, cx=NULL, cy=NULL, nil=0, bnil=0, wbnil=1, pf=mean, label=NULL, summary=F, id=0, tlog=F, digits=22, sig=.05, models=NULL, writeunc=F, writegml=F, verbose=1){
 	if(is.null(models)){models<-c('e','w','wa','wb','wab','g','ga','gb','gm','gma','gmb','gmc',
 				      'l','la','lb','ls','gmlm','llm','lm','lma','lmb','lmc','lms');}
 	xemax<-sum(log(1/mean(x))-x/mean(x));
@@ -35,34 +34,34 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 		# to the ofw C function, though wbnil=1 generates errors where
 		# it should be identical to the exponential model
 		parw<-partemp; parw[c(2,4)]<-wbnil;
-		es.w<-opsurv(x,y,'w',par=parw,tlog=tlog,ub=c(.5,10,.5,10),cx=cx,cy=cy);
+		es.w<-opsurv(x,y,'w',par=parw,tlog=tlog,ub=c(.5,10,.5,10),cx=cx,cy=cy, verb=verbose);
 		#browser();
 		if(match('wa',models,nomatch=0)){
-			es.wa<-opsurv(x,y,'w',cons=c(F,T,T,T),cx=cx,cy=cy,
+			es.wa<-opsurv(x,y,'w',cons=c(F,T,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.w$estimate,'w',cno=c(F,T,T,T),
 						pf=pf,trim=T),tlog=tlog,ub=c(.5,10,.5,10));
 			if(es.wa$maximum>es.w$maximum){
-				es.w<-opsurv(x,y,'w',cx=cx,cy=cy,
+				es.w<-opsurv(x,y,'w',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.wa$estimate,'w',cni=c(F,T,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog,
 							ub=c(.5,10,.5,10));}
 		} else {es.wa$estimate<-rep.int(-Inf,3);}
 		if(match('wb',models,nomatch=0)){
-			es.wb<-opsurv(x,y,'w',cons=c(T,F,T,T),cx=cx,cy=cy,
+			es.wb<-opsurv(x,y,'w',cons=c(T,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.w$estimate,'w',cno=c(T,F,T,T),
 						pf=pf,trim=T),tlog=tlog,ub=c(.5,10,.5,10));
 			if(es.wb$maximum>es.w$maximum){
-				es.w<-opsurv(x,y,'w',cx=cx,cy=cy,
+				es.w<-opsurv(x,y,'w',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.wb$estimate,'w',cni=c(T,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog,
 							ub=c(.5,10,.5,10));}
 		} else {es.wb$estimate<-rep.int(-Inf,3);}
 		if(match('wab',models,nomatch=0)){
-			es.wab<-opsurv(x,y,'w',cons=c(F,F,T,T),cx=cx,cy=cy,
+			es.wab<-opsurv(x,y,'w',cons=c(F,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.w$estimate,'w',cno=c(F,F,T,T),
 						pf=pf,trim=T),tlog=tlog,ub=c(.5,10,.5,10));
 			if(es.wab$maximum>es.w$maximum){
-				es.w<-opsurv(x,y,'w',cx=cx,cy=cy,
+				es.w<-opsurv(x,y,'w',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.wab$estimate,'w',cni=c(F,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog,
 							ub=c(.5,10,.5,10));}
@@ -70,94 +69,94 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 	} else {es.w$estimate<-rep.int(-Inf,2*xrep);}
 	if(any(c('g','ga','gb','gm','gma','gmb','gmc','l','la','lb','ls','lm',
 		 'lma','lmb','lmc','lms','lmabcs')%in% models)){
-		es.g<-opsurv(x,y,'g',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy);
+		es.g<-opsurv(x,y,'g',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy, verb=verbose);
 		if(match('ga',models,nomatch=0)){
-			es.ga<-opsurv(x,y,'g',cons=c(F,T,T,T),cx=cx,cy=cy,
+			es.ga<-opsurv(x,y,'g',cons=c(F,T,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.g$estimate,'g',cno=c(F,T,T,T),
 						pf=pf,trim=T),tlog=tlog);
 			if(es.ga$maximum>es.g$maximum){
-				es.g<-opsurv(x,y,'g',cx=cx,cy=cy,
+				es.g<-opsurv(x,y,'g',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.ga$estimate,'g',cni=c(F,T,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.ga$estimate<-rep.int(-Inf,3);}; 
 		if(match('gb',models,nomatch=0)){		
-			es.gb<-opsurv(x,y,'g',cons=c(T,F,T,T),cx=cx,cy=cy,
+			es.gb<-opsurv(x,y,'g',cons=c(T,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.g$estimate,'g',cno=c(T,F,T,T),
 						pf=pf,trim=T),tlog=tlog);
 			if(es.gb$maximum>es.g$maximum){
-				es.g<-opsurv(x,y,'g',cx=cx,cy=cy,
+				es.g<-opsurv(x,y,'g',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.gb$estimate,'g',cni=c(T,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.gb$estimate<-rep.int(-Inf,3);}; 
 		partemp<-modpars(es.g$estimate,'g','gm',nil=nil,trim=T,onegrp=onegrp);
 	} else {es.g$estimate<-rep.int(-Inf,2*xrep);}; 
 	if(any(c('gm','gma','gmb','gmc','lm','lma','lmb','lmc','lms','lmabcs')%in% models)){
-		es.gm<-opsurv(x,y,'gm',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy);
+		es.gm<-opsurv(x,y,'gm',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy, verb=verbose);
 		if(match('gma',models,nomatch=0)){		
-			es.gma<-opsurv(x,y,'gm',cons=c(F,T,T,T),cx=cx,cy=cy,
+			es.gma<-opsurv(x,y,'gm',cons=c(F,T,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.gm$estimate,'gm',cno=c(F,T,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.gma$maximum>es.gm$maximum){
-				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy,
+				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.gma$estimate,'gm',cni=c(F,T,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.gma$estimate<-rep.int(-Inf,5);}
 		if(match('gmb',models,nomatch=0)){		
-			es.gmb<-opsurv(x,y,'gm',cons=c(T,F,T,T),cx=cx,cy=cy,
+			es.gmb<-opsurv(x,y,'gm',cons=c(T,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.gm$estimate,'gm',cno=c(T,F,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.gmb$maximum>es.gm$maximum){
-				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy,
+				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.gmb$estimate,'gm',cni=c(T,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.gmb$estimate<-rep.int(-Inf,5);}
 		if(match('gmc',models,nomatch=0)){		
-			es.gmc<-opsurv(x,y,'gm',cons=c(T,T,F,T),cx=cx,cy=cy,
+			es.gmc<-opsurv(x,y,'gm',cons=c(T,T,F,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.gm$estimate,'gm',cno=c(T,T,F,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.gmc$maximum>es.gm$maximum){
-				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy,
+				es.gm<-opsurv(x,y,'gm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.gmc$estimate,'gm',cni=c(T,T,F,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.gmc$estimate<-rep.int(-Inf,5);}
 		if(any(c('lm','lma','lmb','lmc','lms','lmabcs') %in% models)){
 			#print('112');browser();
-			es.gmlm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+			es.gmlm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.gm$estimate,'gm','lm',nil=nil,trim=T,
 						    onegrp=onegrp),lb=c(1e-14,0,0,0),tlog=tlog);
 		} else {es.gmlm$estimate<-rep.int(-Inf,4*xrep);}
 	} else {es.gm$estimate<-rep.int(-Inf,3*xrep);};
 	if(any(c('l','la','lb','ls','lm','lma','lmb','lmc','lms','lmabcs')%in% models)){
-		es.l<-opsurv(x,y,'l',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy);
+		es.l<-opsurv(x,y,'l',par=partemp,lb=c(1e-14,0,0,0),tlog=tlog,cx=cx,cy=cy, verb=verbose);
 		if(match('la',models,nomatch=0)){		
-			es.la<-opsurv(x,y,'l',cons=c(F,T,T,T),cx=cx,cy=cy,
+			es.la<-opsurv(x,y,'l',cons=c(F,T,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.l$estimate,'l',cno=c(F,T,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.la$maximum>es.l$maximum){
-				es.l<-opsurv(x,y,'l',cx=cx,cy=cy,
+				es.l<-opsurv(x,y,'l',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.la$estimate,'l',cni=c(F,T,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.la$estimate<-rep.int(-Inf,5);}
 		if(match('lb',models,nomatch=0)){
-			es.lb<-opsurv(x,y,'l',cons=c(T,F,T,T),cx=cx,cy=cy,
+			es.lb<-opsurv(x,y,'l',cons=c(T,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.l$estimate,'l',cno=c(T,F,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lb$maximum>es.l$maximum){
-				es.l<-opsurv(x,y,'l',cx=cx,cy=cy,
+				es.l<-opsurv(x,y,'l',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lb$estimate,'l',cni=c(T,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lb$estimate<-rep.int(-Inf,5);}
 		if(match('ls',models,nomatch=0)){
-			es.ls<-opsurv(x,y,'l',cons=c(T,T,T,F),cx=cx,cy=cy,
+			es.ls<-opsurv(x,y,'l',cons=c(T,T,T,F),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.l$estimate,'l',cno=c(T,T,T,F),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.ls$maximum>es.l$maximum){
-				es.l<-opsurv(x,y,'l',cx=cx,cy=cy,
+				es.l<-opsurv(x,y,'l',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.ls$estimate,'l',cni=c(T,T,T,F),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.ls$estimate<-rep.int(-Inf,5);}
 		if(any(c('lm','lma','lmb','lmc','lms','lmabcs') %in% models) ){
-			es.llm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+			es.llm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 				       par=modpars(es.l$estimate,'l','lm',nil=nil,trim=T,onegrp=onegrp),
 				       lb=c(1e-14,0,0,0),tlog=tlog);
 		} else {es.llm$estimate<-rep.int(-Inf,4*xrep);}
@@ -166,47 +165,47 @@ function(x,y=NULL,cx=NULL,cy=NULL,nil=0,bnil=0,wbnil=1,pf=mean,label=NULL,summar
 	if(es.gmlm$max<es.llm$max){es.lm<-es.llm;} else {es.lm<-es.gmlm;}
 	if(is.finite(es.lm$maximum)){
 		if(match('lma',models,nomatch=0)){
-			es.lma<-opsurv(x,y,'lm',cons=c(F,T,T,T),cx=cx,cy=cy,
+			es.lma<-opsurv(x,y,'lm',cons=c(F,T,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.lm$estimate,'lm',cno=c(F,T,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lma$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lma$estimate,'lm',cni=c(F,T,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lma$estimate<-rep.int(-Inf,7);}
 		if(match('lmb',models,nomatch=0)){
-			es.lmb<-opsurv(x,y,'lm',cons=c(T,F,T,T),cx=cx,cy=cy,
+			es.lmb<-opsurv(x,y,'lm',cons=c(T,F,T,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.lm$estimate,'lm',cno=c(T,F,T,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lmb$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lmb$estimate,'lm',cni=c(T,F,T,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lmb$estimate<-rep.int(-Inf,7);}
 		if(match('lmc',models,nomatch=0)){
-			es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),cx=cx,cy=cy,
+			es.lmc<-opsurv(x,y,'lm',cons=c(T,T,F,T),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.lm$estimate,'lm',cno=c(T,T,F,T),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lmc$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lmc$estimate,'lm',cni=c(T,T,F,T),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lmc$estimate<-rep.int(-Inf,7);}
 		if(match('lms',models,nomatch=0)){
-			es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),cx=cx,cy=cy,
+			es.lms<-opsurv(x,y,'lm',cons=c(T,T,T,F),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.lm$estimate,'lm',cno=c(T,T,T,F),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lms$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lms$estimate,'lm',cni=c(T,T,T,F),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lms$estimate<-rep.int(-Inf,7);}
 		if(match('lmabcs',models,nomatch=0)){
-			es.lmabcs<-opsurv(x,y,'lm',cons=c(F,F,F,F),cx=cx,cy=cy,
+			es.lmabcs<-opsurv(x,y,'lm',cons=c(F,F,F,F),cx=cx,cy=cy, verb=verbose,
 				par=modpars(es.lm$estimate,'lm',cno=c(F,F,F,F),pf=pf,trim=T),
 				tlog=tlog);
 			if(es.lmabcs$maximum>es.lm$maximum){
-				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy,
+				es.lm<-opsurv(x,y,'lm',cx=cx,cy=cy, verb=verbose,
 					par=modpars(es.lms$estimate,'lm',cni=c(F,F,F,F),
 							cno=c(T,T,T,T),pf=pf,trim=T),tlog=tlog);}
 		} else {es.lmabcs$estimate<-rep.int(-Inf,4);}
