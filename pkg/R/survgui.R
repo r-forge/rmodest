@@ -20,6 +20,7 @@ function(xtab=NULL,ytab=NULL,dat=NULL,xynames=c(deparse(substitute(xtab)),depars
 	frame1<-tkframe(a,pady=5,padx=5);
 	frame2<-tkframe(a);frame3<-tkframe(a);frame4<-tkframe(frame2);
 	ar10<-tkfont.create(family='arial',size=10); ar8<-tkfont.create(family='arial',size=8);
+	outputfont<-tkfont.creat(family='courier',size=8);
 	qincr<-c(.01,.05,.1,.2); tcl('set','qrse','boot'); penv<-environment(); cursor<-1;
 	digits=4; data(references,envir=penv); myrefs<-c();
 	oldwidth<-options('width'); options(width=280);

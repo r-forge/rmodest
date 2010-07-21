@@ -1,10 +1,11 @@
 `modpars`<-
-function(x,modeli,modelo=NULL,cni=rep(T,4),cno=NULL,nil=1e-7,pf=mean,trim=F,onegrp=F){
+function(x,modeli,modelo=NULL,cni=rep(T,4),cno=NULL,nil=1e-7,wbnil=1,pf=mean,trim=F,onegrp=F){
 	if(onegrp){x<-c(x,x); cni<-rep(T,4);}
 	if(sum(is.null(x))>0){print('input params contain nulls!');traceback();browser();};
 	if(is.null(modelo)){modelo<-modeli;}; if(is.null(cno)){cno<-cni;};
 	keepi<-switch(modeli,e=c(1,5),w=c(1,2,5,6),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
 	keepo<-switch(modelo,e=c(1,5),w=c(1,2,5,6),g=c(1,2,5,6),gm=c(1:3,5:7),l=c(1,2,4:6,8),lm=1:8);
+	if(modelo=='w') nil<-wbnil;
 	# Will eventually do more input validation, but for now let's agree to pass 
 	# constraints as vectors of either 4 or 1 logical values
 	cni <- !cni; if(length(cni)==1){cni<-rep(cni,4);};
