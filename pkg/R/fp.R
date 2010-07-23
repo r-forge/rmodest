@@ -13,6 +13,7 @@ if(checkinput){
     switch(class(x)[1],
 	list=,
 	fp={d<-x; x<-NULL;},
+	integer=,
 	numeric={},
 	data.frame=,
 	array=,
