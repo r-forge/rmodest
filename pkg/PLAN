@@ -1,8 +1,8 @@
 Plans
 * Figure out why quantile regression vertical scale doesn't cover the fruitfly data adequately.
-* Make a plot function and button for fitted models.
-* Enable resampling in survgui()
-* replace rq with crq
+* DONE Make a plot function and button for fitted models.
+* DONE Enable resampling in survgui()
+* DONE replace rq with crq
 * Integrate SEM estimates into findpars
-* Rewrite findpars to be more dynamic
+* DONE Rewrite findpars to be more dynamic
 

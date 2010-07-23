@@ -37,7 +37,7 @@ void ofw(double *a, double *b, double *c, double *s, int *x, int *size, int *cen
 {
 	int n = *size;
 	while(--n >= 0){
-		*ans = *ans + log(pow(*a,*b) * *b * pow(x[n],(*b -1))) * censor[n];
+		*ans = *ans + log(pow(*a,*b) * (*b) * pow(x[n],(*b -1))) * censor[n];
 		*ans = *ans - pow(*a * x[n],*b);
 	}
 }
@@ -171,18 +171,33 @@ void glm(double *a, double *b, double *c, double *s, int *x, int *size, int *cen
 	ans[0] = suma; ans[1] = sumb; ans[2] = sumc; ans[3] = sums;
 }
 
-
-double ghaz(double *a, double *b, double *c, double *s, int x)
+/* Need to rename these functions to gmsrv, lmsrv, wsrv */
+double gmsrv(double *a, double *b, double *c, double *s, int x)
 {return(exp(- (*a * (exp(*b * x) - 1)/ *b) - *c * x));}
-double lhaz(double *a, double *b, double *c, double *s, int x)
+double lmsrv(double *a, double *b, double *c, double *s, int x)
 {return(exp(- *c * x)*pow((1+ *s * *a * (exp(*b * x)-1)/ *b),(-1/ *s)));}
-double lhaz2(double *a, double *b, double *c, double *s, int x)
+double lmsrv2(double *a, double *b, double *c, double *s, int x)
 {double asb = *a * *s/ *b; double expbx = exp(*b * x); double expcx = exp(- *c * x); 
 	double denom = pow(asb * expbx - asb + 1, 1/ *s);
 return(exp(- *c * x)/pow((asb * exp(*b * x) - asb + 1),1/ *s));}
-double whaz(double *a, double *b, double *c, double *s, int x)
+double wsrv(double *a, double *b, double *c, double *s, int x)
 {double ax = *a * x; double axb = pow(ax,*b); double expaxb = exp(-axb);return(expaxb);}
 
+void srvshp(double *a, double *b, double *c, double *s, int *size, int *model, int *x, double *ans){
+	int n = *size; double surv;
+	double (*sf)(double *,double *,double *,double *,int);
+	sf = &wsrv;
+	switch(*model){
+		case 1: sf = &wsrv; break;
+		case 2: sf = &lmsrv; break;
+		case 3: sf = &gmsrv; break;
+		case 4: sf = &lmsrv2; break;
+		default: printf("Warning: no case selected!\n");	
+	}
+	while(--n >= 0){
+		ans[n] = (*sf)(a,b,c,s,x[n]);
+	}
+}
 
 
 void simsurv(double *a, double *b, double *c, double *s, int *size, int *model, double *ans)
@@ -190,12 +205,12 @@ void simsurv(double *a, double *b, double *c, double *s, int *size, int *model, 
 	int n = *size; int i;
 	double surv, rn;
 	double (*sf)(double *,double *,double *,double *,int);
-	sf = &whaz;
+	sf = &wsrv;
 	switch(*model){
-		case 1: sf = &whaz; break;
-		case 2: sf = &lhaz; break;
-		case 3: sf = &ghaz; break;
-		case 4: sf = &lhaz2; break;
+		case 1: sf = &wsrv; break;
+		case 2: sf = &lmsrv; break;
+		case 3: sf = &gmsrv; break;
+		case 4: sf = &lmsrv2; break;
 		default: printf("Warning: no case selected!\n");	
 	}
 	while(--n >= 0){
@@ -208,3 +223,13 @@ void simsurv(double *a, double *b, double *c, double *s, int *size, int *model, 
 	}
 }
 
+void zptest(double *x1, double *x2, double *n1, double *n2, double *n, int *ln, double *that1, double *that2, double *ttil, double *zp)
+{
+	int i; double denom;
+	for(i=0;i< *ln; i++){
+		that1[i] = x1[i]/ *n1; 
+		that2[i] = x2[i]/ *n2;
+		ttil[i] = (x1[i]+ x2[i])/ *n;
+		zp[i] = (that1[i] - that2[i])/sqrt(ttil[i] * (1 - ttil[i]) * (1/ *n1 + 1/ *n2));
+	}
+}

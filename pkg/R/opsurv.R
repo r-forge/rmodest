@@ -1,7 +1,7 @@
 `opsurv` <-
 function(x,y=0,model=c('w','g','gm','l','lm'),par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,giveup=Inf,
- 	 mvers='',method="Nelder-Mead",tlog=F,getsds=F){
+ 	 mvers='',method="Nelder-Mead",tlog=F,getsds=F,verbose=0){
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	call<-sys.call();
 	# eventually might use hessians from mledrv but no noeed for now
@@ -21,11 +21,11 @@ function(x,y=0,model=c('w','g','gm','l','lm'),par=c(2.6e-6,.004,1e-7,0.1),cons=1
 	if(mean(cons)==1 & sum(y)>0){
 		out<-list();
 		options('warn'= -1);
-		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,mvers=mvers,method=method,tlog=tlog);
+		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,mvers=mvers,method=method,tlog=tlog,verbose=verbose);
 		if(length(par)==2*np){par1<-par[(np+1):(2*np)];
 		} else {if(length(par)==8){par1<-par[5:8];
 		} else par1<-par;}
-		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cy,mvers=mvers,method=method,tlog=tlog);
+		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cy,mvers=mvers,method=method,tlog=tlog,verbose=verbose);
 		options('warn'=0);
 		out$estimate<-c(out0$estimate,out1$estimate);
 		out$maximum<-sum(out0$maximum,out1$maximum);
@@ -66,9 +66,10 @@ and use the defaults.");}
 		ctrl$parscale<-rep.int(1, length(par)); ctrl$ndeps<-rep(0.001, length(par));
 		# is there are reason not to jack up the iterations?
 		ctrl$maxit<-5000;
+		# browser();
 		while(max(change)>0){
 			out.old<-out;
-			cat(".");
+			if(verbose>1) cat(".");
 			options(show.error.messages=F);
 			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)));
 			#if(length(out)==1) browser();
@@ -111,7 +112,7 @@ and use the defaults.");}
 				if(!is.na(lk)){out<-list(p);change<-1;} else {break;}
 			} 
 		}
-		cat(model," ");
+		if(verbose==1) cat('.') else if(verbose>1) cat(model," ");
 		if(class(out)[1]!="try-error"){
 			names(out)<-c('estimate','maximum','iterations','code','message');
 			if(usegr) { out$gradient<-gr(out$estimate); }
