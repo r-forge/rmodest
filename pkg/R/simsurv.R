@@ -10,7 +10,7 @@ function(n,type='g',p=c(2.433083e-05,0.005,3e-11,0.0015)){
 	if(type=='l2'){
 		prob<-srvshp(1:1e5,a=p[1],b=p[2],s=p[4],model='l')*srvhaz(1:1e5,a=p[1],b=p[2],s=p[4]);
 		prob[is.na(prob)]<-0;
-		return(sample(1:1e5,n,rep=T,prob=prob));
+		return(sample(1:1e5,n,replace=T,prob=prob));
 	}
 	model<-switch(type,w2=1,l=,lm=2,g2=,gm2=3,l3=4,e=5);
 	if((model==2|model==4)&p[4]<6e-10){model=3;}

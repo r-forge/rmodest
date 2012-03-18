@@ -1,2 +1,2 @@
 `.required` <-
-c("survival", "tcltk", "surv2sample", "quantreg", "SparseM", "eha")
+c("survival", "quantreg", "SparseM", "eha")

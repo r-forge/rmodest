@@ -1,7 +1,7 @@
 `ezz` <-
 function(d,d2=NULL,g,c1=NULL,c2=NULL,quant=.9,step=.01,thresh=.05,
-	      gnames=NULL,noob=F,thetas=c(.05,.95),debug=F){
-	tstart<-proc.time()[3];
+	      gnames=NULL,noob=F,thetas=c(.05,.95),debug=F,silent=F){
+	if(!silent) tstart<-proc.time()[3];
 	if(is.null(d2)){
 		groups<-levels(as.factor(g));
 		d1<-subset(d,g==groups[1])[,1];
@@ -36,7 +36,7 @@ function(d,d2=NULL,g,c1=NULL,c2=NULL,quant=.9,step=.01,thresh=.05,
 
 	for(i in 1:dim(output)[1]){
 		keep<-abs(zptests)>abs(output$zp[i]);
-		sup<-c(); cat('.');
+		sup<-c(); if(!silent) cat('.');
 		for(j in seq(thetas[1],thetas[2],step)){
 			if(debug) cat("\nRunning zpprob on n1\'s and n2\'s.");
 			zptemp<-outer(0:n1,0:n2,FUN="zpprob",n1=n1,n2=n2,th=j);
@@ -49,7 +49,7 @@ function(d,d2=NULL,g,c1=NULL,c2=NULL,quant=.9,step=.01,thresh=.05,
 	output<-cbind(output,p,sig);
 	rownames(output)<-quant;
 	if(noob){output<-output[,c(1:5,8,9)];}
-	print(proc.time()[3]-tstart);
+	if(!silent) print(proc.time()[3]-tstart);
 	output;
 }
 
