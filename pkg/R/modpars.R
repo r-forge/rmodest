@@ -19,7 +19,12 @@ and try again.');}
 # 		print('Mismatch between model and parameter length.');traceback();browser();
 # 	}
 	# Here we convert the unique-values-only parameter vector into standard form
-	out<-rep.int(NA,8); out[keepi]<-x; 
+	out<-rep.int(NA,8);
+        # the na.omit has been added to fix the "multiple of replacement length" warning
+        # not sure if it's working, not sure if it's broken something YES, adding na.omit seems to have broken something
+        # when exactly does the below line produce warnings and how do I fix it properly?
+        suppressWarnings(out[keepi]<-x);
+        #withCallingHandlers(out[keepi]<-x,warning=function(ex) browser());
 	if(sum(cni)>0){out[5:8][cni]<-out[1:4][cni];}
 	# We insure that any parameters used by the target model are populated
 	out[keepo][is.na(out[keepo])]<-nil;

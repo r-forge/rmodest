@@ -235,7 +235,7 @@ smean <- function(x,cx=NULL,start.time=NULL,end.time=NULL,var=F,sd=F,q=F,ci=.95,
 
 
 
-survsumm <- function(x,y=NULL,cx=NULL,cy=NULL,group=NULL,names=NULL,qs=c(.5,.9),nboot=1000,qmethod="PengHuang",tmax=NULL,quiet=F){
+survsumm <- function(x,y=NULL,cx=NULL,cy=NULL,group=NULL,names=NULL,qs=c(.5,.9),nboot=1000,qmethod="PengHuang",tmax=NULL,quiet=F,adjust='holm'){
   if(is.null(y)&&is.null(group)) stop('The `y` and `group` arguments cannot both be left blank.');
   if(is.null(y)){
     xy <- x; cxy <- cx;
@@ -280,7 +280,9 @@ survsumm <- function(x,y=NULL,cx=NULL,cy=NULL,group=NULL,names=NULL,qs=c(.5,.9),
   out <- cbind(xout,yout,pout);
   #
   #if(!is.null(qs)) rownames(out)[-(1:3)] <- qlabels;
-  colnames(out) <- c(names,'P'); 
+  colnames(out) <- c(names,'P');
+  #browser();
+  if(!is.na(adjust)) out<-cbind(out,AdjP=p.adjust(out[,'P'],adjust)); 
   out <- list(Summary=out,cph=coxph(Surv(xy)~group)); out[['Log Rank']] <- summary(out$cph)$sctest; out;
   #list(Summary=out,`Log Rank`=surv2.logrank(Surv(xy,cxy),group));
 }

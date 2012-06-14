@@ -1,8 +1,8 @@
 Package: Survomatic
 Type: Package
 Title: Analysis of longevity data.
-Version: 1.6.0.0
-Date: 2012-03-18
+Version: 1.7.0.0
+Date: 2012-06-13
 URL: http://rforge.net/Survomatic/
 Depends: survival, quantreg, SparseM, splines, eha, R (>= 2.6.0)
 Author: Alex F. Bokov and Jonathan Gelfond

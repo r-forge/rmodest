@@ -1,9 +1,12 @@
 `opsurv` <-
 function(x,y=0,model=c('w','g','gm','l','lm'),par=c(2.6e-6,.004,1e-7,0.1),cons=1,usegr=F,usehs=F,debug=F,
 	 lb=c(1e-14,1e-4,0,0),ub=c(.5,.5,.5,2),cx=NULL,cy=NULL,giveup=Inf,
- 	 mvers='',method="Nelder-Mead",tlog=F,getsds=F,verbose=0){
+ 	 mvers='',method="Nelder-Mead",tlog=F,getses=F,verbose=0) {
 	callargs<-as.list(environment(),all.names=T); tstart<-proc.time()[3];
 	call<-sys.call();
+        # Note: ctrl is loaded from a data file into global options when the Survomatic library loads
+        # is there are reason not to jack up the iterations?
+        ctrl<-getOption('ctrl'); ctrl$maxit<-5000;
 	# eventually might use hessians from mledrv but no noeed for now
 	model<-match.arg(model);
 	keep<-modelinfo(model,'k');np<-length(keep)/2;ex<-paste('of',model,mvers,sep='');
@@ -21,14 +24,19 @@ function(x,y=0,model=c('w','g','gm','l','lm'),par=c(2.6e-6,.004,1e-7,0.1),cons=1
 	if(mean(cons)==1 & sum(y)>0){
 		out<-list();
 		options('warn'= -1);
-		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cx,mvers=mvers,method=method,tlog=tlog,verbose=verbose);
+		out0<-opsurv(x,model=model,par=par,cons=cons,usegr=usegr,usehs=usehs,
+                             debug=debug,lb=lb,ub=ub,cx=cx,mvers=mvers,method=method,tlog=tlog,
+                             verbose=verbose,getses=getses);
 		if(length(par)==2*np){par1<-par[(np+1):(2*np)];
 		} else {if(length(par)==8){par1<-par[5:8];
 		} else par1<-par;}
-		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,debug=debug,lb=lb,ub=ub,cx=cy,mvers=mvers,method=method,tlog=tlog,verbose=verbose);
+		out1<-opsurv(y,model=model,par=par1,cons=cons,usegr=usegr,usehs=usehs,
+                             debug=debug,lb=lb,ub=ub,cx=cy,mvers=mvers,method=method,tlog=tlog,
+                             verbose=verbose,getses=getses);
 		options('warn'=0);
-		out$estimate<-c(out0$estimate,out1$estimate);
+                out$estimate<-c(out0$estimate,out1$estimate);
 		out$maximum<-sum(out0$maximum,out1$maximum);
+                out$se <- c(out0$se,out1$se);
 		out$iterations<-sum(out0$iterations,out1$iterations);
 		out$code<-sum(out0$code,out1$code);
 		out$message<-paste(out0$message,out1$message);
@@ -62,19 +70,17 @@ and use the defaults.");}
 		}
 		gr<-function(par){grf(par,cons=rep(cons,le=4),x=x,y=y,np=np,keep=keep[1:np],model=paste("g",model,mvers,sep=''),nx=nx,ny=ny,cx=cx,cy=cy,tlog=tlog);}
 		if(!usegr) gr<-NULL; if(!usehs) hs<-NULL;
-		change<-1; out<-list(par); totaliter<-0; ctrl<-getOption('ctrl');
-		ctrl$parscale<-rep.int(1, length(par)); ctrl$ndeps<-rep(0.001, length(par));
-		# is there are reason not to jack up the iterations?
-		ctrl$maxit<-5000;
+		change<-1; out<-list(par); totaliter<-0;
+                ctrl$parscale<-rep.int(1, length(par)); ctrl$ndeps<-rep(0.001, length(par));
 		# browser();
 		while(max(change)>0){
 			out.old<-out;
 			if(verbose>1) cat(".");
-			options(show.error.messages=F);
-			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)));
+			#options(show.error.messages=F);
+			out<-try(.Internal(optim(out.old[[1]],fn,gr,method,ctrl,lb,ub)),T);
 			#if(length(out)==1) browser();
 			#cat('cx:',cx,'\n','cy:',cy,'\n');
-			options(show.error.messages=T);
+			#options(show.error.messages=T);
 			if(class(out)[1]!="try-error"){
 				totaliter<-out[[3]][1]+totaliter;
 				if(totaliter>giveup){
@@ -123,6 +129,27 @@ and use the defaults.");}
 			if(tlog){out$estimate<-exp(out$estimate);}
 		}
 		if(debug){cat("Runtime:",proc.time()[3],"\n");}
-	}
+                if(getses){
+                  ctrl$ndeps<-rep(1e-6,length(par));
+                  options(show.error.messages=F);
+                  out$hess<-try(optimHess(out$estimate,fn,control=ctrl),F);
+                  while(class(out$hess)=='try-error'||any(diag(-out$hess)<0)){
+                    ctrl$ndeps <- ctrl$ndeps*1e-3;
+                    if(min(ctrl$ndeps)<.Machine$double.eps) break;
+                    out$hess<-try(optimHess(out$estimate,fn,control=ctrl),F);
+                  }
+                  options(show.error.messages=T);
+                  if(class(out$hess)=='try-error'||any(diag(-out$hess)<0)) {
+                    out$se <- rep(NA,length(par));
+                    out$sediags <- ctrl;
+                  } else {
+                    out$se<-sqrt(diag(solve(-out$hess)));
+                  # ...or should we divide the hess by the sample size nx?
+                  # if so, make sure to check whether ny > 1 and if so, add that
+
+                  }
+                  
+                }
+              }
 	out;
-}
+      }
